@@ -1,9 +1,15 @@
+use super::player_board::PlayerBoard;
 
-use eframe::{egui::{self, Label, RichText, Style, Button}, epaint::{text::LayoutJob, Vec2}};
+use std::sync::Arc;
+
+use eframe::{egui::{self, RichText, Button}, egui_glow::CallbackFn, epaint::Vec2};
+
+
+use egui::mutex::Mutex;
+
 
 pub fn init() -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions {
-        initial_window_size: Some(egui::vec2(720.0, 480.0)),
         ..Default::default()
     };
 
@@ -14,13 +20,22 @@ pub fn init() -> Result<(), eframe::Error> {
             // This gives us image support:
             // egui_extras::install_image_loaders(&cc.egui_ctx);
 
-            Box::<App>::default()
+            Box::new(App::new(cc))
         }),
     )
 }
 
-struct App {
 
+
+#[derive(PartialEq, Debug)]
+enum AppView {
+    Home,
+    Game,
+}
+
+struct App {
+    view: AppView,
+    player_board: Option<Arc<Mutex<PlayerBoard>>>
 }
 
 impl App {
@@ -29,53 +44,84 @@ impl App {
             .gl
             .as_ref()
             .expect("You need to run eframe with the glow backend");
+
         Self {
+            view: AppView::Game,
+            player_board: Option::Some(Arc::new(Mutex::new(PlayerBoard::new(&*gl)))),
         }
     }
-}
 
-impl Default for App {
-    fn default() -> Self {
-        Self {
+    fn paint(&mut self, ui: &mut egui::Ui) {
+        let (rect, response) =
+            ui.allocate_exact_size(egui::Vec2::splat(300.0), egui::Sense::drag());
+
+
+        // Clone locals so we can move them into the paint callback:
+        if let Some(board) = self.player_board.clone() {
+
+            let callback = egui::PaintCallback {
+                rect,
+                callback: std::sync::Arc::new(CallbackFn::new(move |_info, painter| {
+                    board.lock().paint(painter.gl());
+                })),
+            };
+            ui.painter().add(callback);
         }
     }
 }
 
 impl eframe::App for App {
     fn on_exit(&mut self, gl: Option<&eframe::glow::Context>) {
-    }
-
-    fn on_close_event(&mut self) -> bool {
-        println!("onClose");
-        return true;
+        if let Some(gl) = gl {
+            if let Some(ref player_board) = self.player_board {
+                player_board.lock().destroy(gl);
+            }
+        }
     }
 
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
-        egui::CentralPanel::default().show(ctx, |ui| {
-            ui.vertical_centered(|ui| {
-                ui.add_space(30.0);
-                ui.style_mut().spacing.button_padding = Vec2 {
-                    x: 40.0,
-                    y: 10.0,
-                };
-                ui.style_mut().spacing.item_spacing = Vec2 {
-                    x: 10.0,
-                    y: 20.0,
-                };
-                ui.label(RichText::new("RUSTRIS").size(60.0).strong());
+        match self.view {
+            AppView::Home => {
+                egui::CentralPanel::default().show(ctx, |ui| {
+                    ui.vertical_centered(|ui| {
+                        ui.add_space(30.0);
+                        ui.style_mut().spacing.button_padding = Vec2 {
+                            x: 40.0,
+                            y: 10.0,
+                        };
+                        ui.style_mut().spacing.item_spacing = Vec2 {
+                            x: 10.0,
+                            y: 20.0,
+                        };
+                        ui.label(RichText::new("RUSTRIS").size(60.0).strong());
 
 
-                ui.add_space(60.0);
+                        ui.add_space(60.0);
 
-                let play_button = Button::new(RichText::new("Play").size(30.0));
-                ui.add(play_button);
+                        let play_button = ui.add(Button::new(RichText::new("Play").size(30.0)));
+                        let quit_button = ui.add(Button::new(RichText::new("Quit").size(30.0)));
+                        if play_button.clicked() {
+                            self.view = AppView::Game;
+                            println!("Clicked");
 
-                let quit_button = ui.add(Button::new(RichText::new("Quit").size(30.0)));
+                            if let Some(ref pb) = self.player_board {
+                                println!("debug {:?}", pb.lock());
+                            }
+                        }
 
-                if quit_button.clicked() {
-                    frame.close();
-                }
-            });
-        });
+                        if quit_button.clicked() {
+                            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                        }
+                    });
+                });
+            },
+            AppView::Game => {
+                egui::CentralPanel::default().show(ctx, |ui| {
+                    egui::Frame::canvas(ui.style()).show(ui, |ui| {
+                        self.paint(ui);
+                    });
+                });
+            }
+        }
     }
 }
