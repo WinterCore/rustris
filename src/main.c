@@ -96,8 +96,9 @@ int main() {
     glfwInit();
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
     /*
     const char *foo = glfwGetVersionString();
@@ -120,7 +121,9 @@ int main() {
         return -1;
     }
 
+    glfwSetWindowPos(window, 900, 100);
     glfwMakeContextCurrent(window);
+    glfwSetFramebufferSizeCallback(window, &framebuffer_size_callback);
 
     if (! gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
         fprintf(stderr, "Failed to initialize GLAD\n");
@@ -128,8 +131,6 @@ int main() {
         return -1;
     }
 
-    glViewport(0, 0, 800, 600);
-    glfwSetFramebufferSizeCallback(window, &framebuffer_size_callback);
 
     unsigned int vertex_shader = compile_vertex_shader("./shaders/main.vert");
     unsigned int fragment_shader = compile_fragment_shader("./shaders/main.frag");
@@ -146,16 +147,16 @@ int main() {
 
 
     float vertices[] = {
-         0.5f,  0.5f, 0.0f,  // top right
-         0.5f, -0.5f, 0.0f,  // bottom right
-        -0.5f, -0.5f, 0.0f,  // bottom left
-        -0.5f,  0.5f, 0.0f   // top left
+        -1.0f,  1.0f, 0.0f,
+         1.0f,  1.0f, 0.0f,
+         1.0f, -1.0f, 0.0f,
+
+        -1.0f,  1.0f, 0.0f,
+        -1.0f, -1.0f, 0.0f,
+         1.0f, -1.0f, 0.0f,
     };
 
-    unsigned int indices[] = {
-        0, 1, 3,
-        1, 2, 3
-    };
+    unsigned int indices[] = {};
 
     unsigned int VBO, VAO, EBO;
     glGenVertexArrays(1, &VAO);
@@ -192,12 +193,11 @@ int main() {
     // Unbind VAO
     glBindVertexArray(0);
 
-
-    // TODO: Maybe it needs to be moved into the loop?
     glUseProgram(shader_program);
 
 
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    // Wireframe mode
+    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     while (! glfwWindowShouldClose(window)) {
         // Handle inputs
@@ -210,7 +210,8 @@ int main() {
 
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 3);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glDrawArrays(GL_TRIANGLES, 3, 3);
+        // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 
         // Check and call events and swap the buffers

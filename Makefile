@@ -1,5 +1,14 @@
-CFLAGS = -std=c11 -Wall -Wextra `pkg-config --cflags glfw3 gl`
-LDFLAGS = -Iinclude `pkg-config --static --libs glfw3 gl`
+OS := $(shell uname)
+CFLAGS = -std=c11 -Wall -Wextra
+LDFLAGS = -Iinclude
+
+ifeq ($(OS),Darwin)
+	CFLAGS += `pkg-config --cflags glfw3`
+	LDFLAGS += `pkg-config --static --libs glfw3`
+else
+	CFLAGS += `pkg-config --cflags glfw3 gl`
+	LDFLAGS += `pkg-config --static --libs glfw3 gl`
+endif
 
 .PHONY: clean debug all executable
 
