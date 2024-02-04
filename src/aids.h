@@ -1,5 +1,5 @@
-#ifndef AIDS
-#define AIDS
+#ifndef AIDS_H
+#define AIDS_H
 #include <stdio.h>
 
 #ifdef DEBUG
