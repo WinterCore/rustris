@@ -8,5 +8,6 @@ This project was supposed to be written in Rust but I changed my mind because ap
 
 ### References
 - [https://learnopengl.com/Getting-started/Hello-Triangle](https://learnopengl.com/Getting-started/Hello-Triangle)
+- [https://tetris.fandom.com/wiki/SRS](https://tetris.fandom.com/wiki/SRS)
 
 `bear -- make` to generate `compile_commands.json` for `coc-clangd`

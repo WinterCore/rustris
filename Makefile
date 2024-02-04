@@ -23,14 +23,17 @@ release: executable
 executable: Rustris
 	./Rustris
 
-src/aids.o: src/aids.c src/aids.h
+src/aids.o: src/aids.c
 	cc $(CFLAGS) -c -o src/aids.o src/aids.c $(LDFLAGS)
 
 src/glad.o: src/glad.c
 	cc $(CFLAGS) -c -o src/glad.o src/glad.c $(LDFLAGS)
 
+src/draw.o: src/draw.c
+	cc $(CFLAGS) -c -o src/draw.o src/draw.c $(LDFLAGS)
+
 clean:
 	rm -rf Rustris ./src/*.o
 
-Rustris: src/main.c src/glad.o src/aids.o
-	cc $(CFLAGS) -o Rustris src/main.c src/glad.o src/aids.o $(LDFLAGS)
+Rustris: src/main.c src/glad.o src/aids.o src/draw.o
+	cc $(CFLAGS) -o Rustris src/main.c src/glad.o src/aids.o src/draw.o $(LDFLAGS)
