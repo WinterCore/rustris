@@ -29,7 +29,7 @@ src/aids.o: src/aids.c
 src/glad.o: src/glad.c
 	cc $(CFLAGS) -c -o src/glad.o src/glad.c $(LDFLAGS)
 
-src/draw.o: src/draw.c
+src/draw.o: src/draw.c src/draw.h
 	cc $(CFLAGS) -c -o src/draw.o src/draw.c $(LDFLAGS)
 
 clean:

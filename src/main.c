@@ -7,6 +7,7 @@
 #define DEBUG
 
 #include "aids.h"
+#include "draw.h"
 
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
@@ -100,6 +101,52 @@ int main() {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
+    int BOARD_WIDTH = 10;
+    int BOARD_HEIGHT = 20;
+
+    float vertices[] = {
+        0.0f, 1.0f,   0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f,   0.0f, 1.0f, 0.0f,
+        1.0f, 1.0f,   0.0f, 1.0f, 0.0f,
+        1.0f, 0.0f,   0.0f, 1.0f, 0.0f,
+        2.0f, 1.0f,   0.0f, 1.0f, 0.0f,
+        2.0f, 0.0f,   0.0f, 1.0f, 0.0f,
+        3.0f, 1.0f,   0.0f, 1.0f, 0.0f,
+        3.0f, 0.0f,   0.0f, 1.0f, 0.0f,
+        4.0f, 1.0f,   0.0f, 1.0f, 0.0f,
+        4.0f, 0.0f,   0.0f, 1.0f, 0.0f,
+    };
+    
+    unsigned int elements[] = {
+        0, 1, 2,
+        1, 2, 3,
+        2, 3, 4,
+        3, 4, 5,
+        4, 5, 6,
+        5, 6, 7,
+        6, 7, 8,
+        7, 8, 9
+    };
+    
+    TetrominoGeometry i_piece_geometry = {
+        .vertices_count = sizeof(vertices) / sizeof(float),
+        .elements_count = sizeof(elements) / sizeof(unsigned int),
+        .elements_indices = &elements[0],
+        .vertices = &vertices[0],
+    };
+
+    for (unsigned int i = 0; i < sizeof(vertices) / sizeof(float); i += 5) {
+        // x
+        vertices[i + 0] = (2.0f / (float) BOARD_WIDTH) * vertices[i + 0] - 1;
+
+        // y
+        vertices[i + 1] = (2.0f / (float) BOARD_HEIGHT) * vertices[i + 1] - 1;
+
+        printf("X: %f, Y: %f\n", vertices[i + 0], vertices[i + 1]);
+    }
+    
+
+
     /*
     const char *foo = glfwGetVersionString();
     printf("HELLO: %s\n", foo);
@@ -141,22 +188,11 @@ int main() {
         shaders,
         sizeof(shaders) / sizeof(unsigned int)
     );
+    printf("ELEMENTS COUNT: %ud", i_piece_geometry.elements_count);
+    fflush(stdout);
 
     glDeleteShader(vertex_shader);
     glDeleteShader(fragment_shader);
-
-
-    float vertices[] = {
-        -1.0f,  1.0f, 0.0f,
-         1.0f,  1.0f, 0.0f,
-         1.0f, -1.0f, 0.0f,
-
-        -1.0f,  1.0f, 0.0f,
-        -1.0f, -1.0f, 0.0f,
-         1.0f, -1.0f, 0.0f,
-    };
-
-    unsigned int indices[] = {};
 
     unsigned int VBO, VAO, EBO;
     glGenVertexArrays(1, &VAO);
@@ -173,23 +209,30 @@ int main() {
 
     
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW);
 
 
     glVertexAttribPointer(
         0,
-        3,
+        2,
         GL_FLOAT,
         GL_FALSE,
-        3 * sizeof(float),
+        5 * sizeof(float),
         (void *) 0
     );
     glEnableVertexAttribArray(0);
+    glVertexAttribPointer(
+        1,
+        3,
+        GL_FLOAT,
+        GL_FALSE,
+        5 * sizeof(float),
+        (void *) (2 * sizeof(float))
+    );
+    glEnableVertexAttribArray(1);
 
     // Unbind buffer
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-
     // Unbind VAO
     glBindVertexArray(0);
 
@@ -209,9 +252,11 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT);
 
         glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        // glDrawArrays(GL_TRIANGLES, 0, 3);
+        /*
         glDrawArrays(GL_TRIANGLES, 3, 3);
-        // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        */
+        glDrawElements(GL_TRIANGLES, i_piece_geometry.elements_count, GL_UNSIGNED_INT, 0);
 
 
         // Check and call events and swap the buffers
