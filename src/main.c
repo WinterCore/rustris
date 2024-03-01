@@ -104,45 +104,19 @@ int main() {
     int BOARD_WIDTH = 10;
     int BOARD_HEIGHT = 20;
 
-    float vertices[] = {
-        0.0f, 1.0f,   0.0f, 1.0f, 0.0f,
-        0.0f, 0.0f,   0.0f, 1.0f, 0.0f,
-        1.0f, 1.0f,   0.0f, 1.0f, 0.0f,
-        1.0f, 0.0f,   0.0f, 1.0f, 0.0f,
-        2.0f, 1.0f,   0.0f, 1.0f, 0.0f,
-        2.0f, 0.0f,   0.0f, 1.0f, 0.0f,
-        3.0f, 1.0f,   0.0f, 1.0f, 0.0f,
-        3.0f, 0.0f,   0.0f, 1.0f, 0.0f,
-        4.0f, 1.0f,   0.0f, 1.0f, 0.0f,
-        4.0f, 0.0f,   0.0f, 1.0f, 0.0f,
-    };
+    Tetromino tetro = TETROMINOS[TETRO_J];
     
-    unsigned int elements[] = {
-        0, 1, 2,
-        1, 2, 3,
-        2, 3, 4,
-        3, 4, 5,
-        4, 5, 6,
-        5, 6, 7,
-        6, 7, 8,
-        7, 8, 9
-    };
-    
-    TetrominoGeometry i_piece_geometry = {
-        .vertices_count = sizeof(vertices) / sizeof(float),
-        .elements_count = sizeof(elements) / sizeof(unsigned int),
-        .elements_indices = &elements[0],
-        .vertices = &vertices[0],
-    };
+    printf("HELLO: %d\n", tetro.vertices_count);
+    fflush(stdout);
 
-    for (unsigned int i = 0; i < sizeof(vertices) / sizeof(float); i += 5) {
+    for (unsigned int i = 0; i < tetro.vertices_count; i += 2) {
         // x
-        vertices[i + 0] = (2.0f / (float) BOARD_WIDTH) * vertices[i + 0] - 1;
+        tetro.vertices[i + 0] = (2.0f / (float) BOARD_WIDTH) * tetro.vertices[i + 0] - 1;
 
         // y
-        vertices[i + 1] = (2.0f / (float) BOARD_HEIGHT) * vertices[i + 1] - 1;
+        tetro.vertices[i + 1] = (2.0f / (float) BOARD_HEIGHT) * tetro.vertices[i + 1] - 1;
 
-        printf("X: %f, Y: %f\n", vertices[i + 0], vertices[i + 1]);
+        printf("X: %f, Y: %f\n", tetro.vertices[i + 0], tetro.vertices[i + 1]);
     }
     
 
@@ -188,7 +162,7 @@ int main() {
         shaders,
         sizeof(shaders) / sizeof(unsigned int)
     );
-    printf("ELEMENTS COUNT: %ud", i_piece_geometry.elements_count);
+    printf("ELEMENTS COUNT: %ud", tetro.elements_count);
     fflush(stdout);
 
     glDeleteShader(vertex_shader);
@@ -205,11 +179,11 @@ int main() {
 
     // BIND Buffer
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, tetro.vertices_count * sizeof(float), tetro.vertices, GL_STATIC_DRAW);
 
     
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, tetro.elements_count * sizeof(unsigned int), tetro.elements, GL_STATIC_DRAW);
 
 
     glVertexAttribPointer(
@@ -217,10 +191,13 @@ int main() {
         2,
         GL_FLOAT,
         GL_FALSE,
-        5 * sizeof(float),
+        2 * sizeof(float),
         (void *) 0
     );
     glEnableVertexAttribArray(0);
+
+
+    /*
     glVertexAttribPointer(
         1,
         3,
@@ -230,6 +207,7 @@ int main() {
         (void *) (2 * sizeof(float))
     );
     glEnableVertexAttribArray(1);
+    */
 
     // Unbind buffer
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -256,7 +234,7 @@ int main() {
         /*
         glDrawArrays(GL_TRIANGLES, 3, 3);
         */
-        glDrawElements(GL_TRIANGLES, i_piece_geometry.elements_count, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, tetro.elements_count, GL_UNSIGNED_INT, 0);
 
 
         // Check and call events and swap the buffers
