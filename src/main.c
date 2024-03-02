@@ -104,7 +104,7 @@ int main() {
     int BOARD_WIDTH = 10;
     int BOARD_HEIGHT = 20;
 
-    Tetromino tetro = TETROMINOS[TETRO_J];
+    Tetromino tetro = TETROMINOS[TETRO_Z];
     
     printf("HELLO: %d\n", tetro.vertices_count);
     fflush(stdout);
@@ -131,7 +131,7 @@ int main() {
     GLFWwindow *window = glfwCreateWindow(
         800,
         600,
-        "Rustriss",
+        "Rustris",
         NULL,
         NULL
     );
@@ -218,7 +218,7 @@ int main() {
 
 
     // Wireframe mode
-    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     while (! glfwWindowShouldClose(window)) {
         // Handle inputs
