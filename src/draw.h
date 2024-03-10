@@ -1,27 +1,20 @@
 #ifndef DRAW_H
 #define DRAW_H
-#include <stdbool.h>
 
-typedef enum TetrominoType {
-    TETRO_I = 0,
-    TETRO_J,
-    TETRO_L,
-    TETRO_O,
-    TETRO_S,
-    TETRO_T,
-    TETRO_Z,
-} TetrominoType;
+#include <stdbool.h>
+#include <stdint.h>
+#include "game.h"
 
 // All tetrominos have a widthxheight = 4x4
 typedef struct Tetromino {
     bool squares[16];
     TetrominoType type;
 
-    unsigned int vertices_count;
+    uint32_t vertices_count;
     float *vertices;
 
-    unsigned int elements_count;
-    unsigned int *elements;
+    uint32_t elements_count;
+    uint32_t *elements;
 } Tetromino;
 
 static const Tetromino TETROMINOS[7] = {
@@ -47,7 +40,7 @@ static const Tetromino TETROMINOS[7] = {
             4.0f, 0.0f,
         },
         .elements_count = 24,
-        .elements = (unsigned int []) {
+        .elements = (uint32_t []) {
             0, 1, 2,
             1, 2, 3,
             2, 3, 4,
@@ -82,7 +75,7 @@ static const Tetromino TETROMINOS[7] = {
             1.0f, 2.0f,
         },
         .elements_count = 30,
-        .elements = (unsigned int []) {
+        .elements = (uint32_t []) {
             0,  1, 11,
             1, 10, 11,
             1,  2, 10,
@@ -119,7 +112,7 @@ static const Tetromino TETROMINOS[7] = {
             1.0f, 1.0f,
         },
         .elements_count = 30,
-        .elements = (unsigned int []) {
+        .elements = (uint32_t []) {
             0,  1, 11,
             1,  2, 11,
             2, 10, 11,
@@ -153,7 +146,7 @@ static const Tetromino TETROMINOS[7] = {
             1.0f, 1.0f,
         },
         .elements_count = 24,
-        .elements = (unsigned int []) {
+        .elements = (uint32_t []) {
             0, 1, 7,
             1, 7, 8,
             1, 2, 8,
@@ -186,7 +179,7 @@ static const Tetromino TETROMINOS[7] = {
             1.0f, 1.0f,
         },
         .elements_count = 24,
-        .elements = (unsigned int []) {
+        .elements = (uint32_t []) {
             0, 1, 9,
             1, 2, 9,
             2, 4, 9,
@@ -219,7 +212,7 @@ static const Tetromino TETROMINOS[7] = {
             2.0f, 2.0f
         },
         .elements_count = 24,
-        .elements = (unsigned int []) {
+        .elements = (uint32_t []) {
             1, 2, 3,
             1, 3, 4,
             1, 4, 8,
@@ -252,7 +245,7 @@ static const Tetromino TETROMINOS[7] = {
             0.0f, 2.0f,
         },
         .elements_count = 24,
-        .elements = (unsigned int []){
+        .elements = (uint32_t []){
             0, 8, 9,
             0, 1, 8,
             1, 7, 8,
@@ -265,21 +258,31 @@ static const Tetromino TETROMINOS[7] = {
     },
 };
 
-typedef struct TetrominoGeometry {
-    unsigned int vertices_count;
-    float *vertices;
+typedef struct UIBoard {
+    uint32_t square_width;
+    uint32_t square_height;
 
-    unsigned int elements_count;
-    unsigned int *elements_indices;
-} TetrominoGeometry;
+    uint32_t padding_y;
+    uint32_t padding_x;
+} UIBoard;
 
-void genTetrominoVao();
-void genTetrominoVertices(
-    const Tetromino *tetro,
-    unsigned int posX,
-    unsigned int posY,
-    unsigned int squareWidth,
-    unsigned int squareHeight
-);
+typedef struct UIBoardVertexData {
+    uint32_t vertex_data_size;
+    float *vertex_data;
+
+    uint32_t elements_size;
+    uint32_t *elements_data;
+} UIBoardVertexData;
+
+typedef struct App {
+    uint32_t viewport_width;
+    uint32_t viewport_height;
+
+    UIBoard ui_board;
+
+    Game game;
+} App;
+
+void update_board_dimensions(App *app);
 
 #endif

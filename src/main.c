@@ -1,8 +1,10 @@
+#include "game.h"
 #include <stdio.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #define DEBUG
 
@@ -11,7 +13,14 @@
 
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
+    App *app = glfwGetWindowUserPointer(window);
     glViewport(0, 0, width, height);
+
+    app->viewport_width = width;
+    app->viewport_height = height;
+    update_board_dimensions(app);
+
+    DEBUG_PRINT("WINDOW RESIZE width=%u, height=%u | square width = %u", width, height, app->ui_board.square_width);
 }
 
 void process_input(GLFWwindow *window) {
@@ -20,10 +29,10 @@ void process_input(GLFWwindow *window) {
     }
 }
 
-unsigned int compile_vertex_shader(const char *path) {
+uint32_t compile_vertex_shader(const char *path) {
     Kyle shader_source = kyle_from_file(path);
 
-    unsigned int vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+    uint32_t vertex_shader = glCreateShader(GL_VERTEX_SHADER);
 
     int shader_lengths[] = { shader_source.length };
     glShaderSource(vertex_shader, 1, &shader_source.data, shader_lengths);
@@ -44,10 +53,10 @@ unsigned int compile_vertex_shader(const char *path) {
     return vertex_shader;
 }
 
-unsigned int compile_fragment_shader(const char *path) {
+uint32_t compile_fragment_shader(const char *path) {
     Kyle shader_source = kyle_from_file(path);
 
-    unsigned int fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+    uint32_t fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
 
     int shader_lengths[] = { shader_source.length };
     glShaderSource(fragment_shader, 1, &shader_source.data, shader_lengths);
@@ -68,8 +77,8 @@ unsigned int compile_fragment_shader(const char *path) {
     return fragment_shader;
 }
 
-unsigned int create_shader_program(unsigned int shaders[], int len) {
-    unsigned int shader_program = glCreateProgram();
+uint32_t create_shader_program(unsigned int shaders[], int len) {
+    uint32_t shader_program = glCreateProgram();
 
     for (int i = 0; i < len; i += 1) {
         glAttachShader(shader_program, shaders[i]);
@@ -101,15 +110,15 @@ int main() {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
-    int BOARD_WIDTH = 10;
-    int BOARD_HEIGHT = 20;
-
     Tetromino tetro = TETROMINOS[TETRO_Z];
     
     printf("HELLO: %d\n", tetro.vertices_count);
     fflush(stdout);
+    
+    uint8_t square_width = 0;
 
-    for (unsigned int i = 0; i < tetro.vertices_count; i += 2) {
+    /*
+    for (uint32_t i = 0; i < tetro.vertices_count; i += 2) {
         // x
         tetro.vertices[i + 0] = (2.0f / (float) BOARD_WIDTH) * tetro.vertices[i + 0] - 1;
 
@@ -118,6 +127,7 @@ int main() {
 
         printf("X: %f, Y: %f\n", tetro.vertices[i + 0], tetro.vertices[i + 1]);
     }
+    */
     
 
 
@@ -142,8 +152,27 @@ int main() {
         return -1;
     }
 
+    int initial_width, initial_height;
+
+    glfwGetWindowSize(window, &initial_width, &initial_height);
+
+    App app = {
+        .viewport_width = initial_width,
+        .viewport_height = initial_height,
+        .game = create_game(10, 20),
+        .ui_board = {
+            .padding_x = 0,
+            .padding_y = 20,
+            .square_width = 0,
+            .square_height = 0,
+        },
+    };
+    update_board_dimensions(&app);
+
+    glfwSetWindowUserPointer(window, &app);
     glfwSetWindowPos(window, 900, 100);
     glfwMakeContextCurrent(window);
+
     glfwSetFramebufferSizeCallback(window, &framebuffer_size_callback);
 
     if (! gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
@@ -153,22 +182,20 @@ int main() {
     }
 
 
-    unsigned int vertex_shader = compile_vertex_shader("./shaders/main.vert");
-    unsigned int fragment_shader = compile_fragment_shader("./shaders/main.frag");
+    uint32_t vertex_shader = compile_vertex_shader("./shaders/main.vert");
+    uint32_t fragment_shader = compile_fragment_shader("./shaders/main.frag");
 
-    unsigned int shaders[] = { vertex_shader, fragment_shader };
+    uint32_t shaders[] = { vertex_shader, fragment_shader };
 
-    unsigned int shader_program = create_shader_program(
+    uint32_t shader_program = create_shader_program(
         shaders,
-        sizeof(shaders) / sizeof(unsigned int)
+        sizeof(shaders) / sizeof(uint32_t)
     );
-    printf("ELEMENTS COUNT: %ud", tetro.elements_count);
-    fflush(stdout);
 
     glDeleteShader(vertex_shader);
     glDeleteShader(fragment_shader);
 
-    unsigned int VBO, VAO, EBO;
+    uint32_t VBO, VAO, EBO;
     glGenVertexArrays(1, &VAO);
 
     glGenBuffers(1, &VBO);
@@ -183,7 +210,7 @@ int main() {
 
     
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, tetro.elements_count * sizeof(unsigned int), tetro.elements, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, tetro.elements_count * sizeof(uint32_t), tetro.elements, GL_STATIC_DRAW);
 
 
     glVertexAttribPointer(

@@ -15,6 +15,9 @@
             fflush(stderr); \
         }
 
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+
 typedef struct Kyle {
     const char *data;
     const size_t length;
