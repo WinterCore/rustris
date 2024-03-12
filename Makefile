@@ -23,14 +23,14 @@ release: executable
 executable: Rustris
 	./Rustris
 
-src/aids.o: src/aids.c
+src/aids.o: src/aids.c src/aids.h
 	cc $(CFLAGS) -c -o src/aids.o src/aids.c $(LDFLAGS)
 
 src/glad.o: src/glad.c
 	cc $(CFLAGS) -c -o src/glad.o src/glad.c $(LDFLAGS)
 
-src/draw.o: src/draw.c src/draw.h src/game.o
-	cc $(CFLAGS) -c -o src/draw.o src/draw.c src/game.o $(LDFLAGS)
+src/draw.o: src/draw.c src/draw.h src/game.o src/aids.o
+	cc $(CFLAGS) -c -o src/draw.o src/draw.c $(LDFLAGS)
 
 src/game.o: src/game.c src/game.h
 	cc $(CFLAGS) -c -o src/game.o src/game.c $(LDFLAGS)
@@ -38,5 +38,5 @@ src/game.o: src/game.c src/game.h
 clean:
 	rm -rf Rustris ./src/*.o
 
-Rustris: src/main.c src/glad.o src/aids.o src/draw.o
+Rustris: src/main.c src/glad.o src/aids.o src/draw.o src/game.o
 	cc $(CFLAGS) -o Rustris src/main.c src/glad.o src/game.o src/aids.o src/draw.o $(LDFLAGS)

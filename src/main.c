@@ -1,4 +1,3 @@
-#include "game.h"
 #include <stdio.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -8,6 +7,7 @@
 
 #define DEBUG
 
+#include "game.h"
 #include "aids.h"
 #include "draw.h"
 
@@ -110,10 +110,12 @@ int main() {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
+    /*
     Tetromino tetro = TETROMINOS[TETRO_Z];
     
     printf("HELLO: %d\n", tetro.vertices_count);
     fflush(stdout);
+    */
     
     uint8_t square_width = 0;
 
@@ -204,13 +206,16 @@ int main() {
     // BIND VAO
     glBindVertexArray(VAO);
 
+    UIBoardVertexData ui_board_vertex_data = generate_ui_board_vertex_data(&app);
+    DEBUG_PRINT("HI %u", ui_board_vertex_data.elements_size);
+
     // BIND Buffer
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, tetro.vertices_count * sizeof(float), tetro.vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, ui_board_vertex_data.vertex_data_size * sizeof(float), ui_board_vertex_data.vertex_data, GL_STATIC_DRAW);
 
     
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, tetro.elements_count * sizeof(uint32_t), tetro.elements, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, ui_board_vertex_data.elements_size * sizeof(uint32_t), ui_board_vertex_data.elements_data, GL_STATIC_DRAW);
 
 
     glVertexAttribPointer(
@@ -218,23 +223,21 @@ int main() {
         2,
         GL_FLOAT,
         GL_FALSE,
-        2 * sizeof(float),
+        3 * sizeof(float),
         (void *) 0
     );
     glEnableVertexAttribArray(0);
 
 
-    /*
     glVertexAttribPointer(
         1,
-        3,
+        1,
         GL_FLOAT,
         GL_FALSE,
-        5 * sizeof(float),
+        3 * sizeof(float),
         (void *) (2 * sizeof(float))
     );
     glEnableVertexAttribArray(1);
-    */
 
     // Unbind buffer
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -261,7 +264,7 @@ int main() {
         /*
         glDrawArrays(GL_TRIANGLES, 3, 3);
         */
-        glDrawElements(GL_TRIANGLES, tetro.elements_count, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, ui_board_vertex_data.elements_size, GL_UNSIGNED_INT, 0);
 
 
         // Check and call events and swap the buffers

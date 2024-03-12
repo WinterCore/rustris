@@ -284,5 +284,6 @@ typedef struct App {
 } App;
 
 void update_board_dimensions(App *app);
+UIBoardVertexData generate_ui_board_vertex_data(App *app);
 
 #endif

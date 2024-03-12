@@ -1,7 +1,7 @@
 #version 410 core
 
 layout (location = 0) in vec2 pos;
-// layout (location = 1) in vec3 vertColor;
+layout (location = 1) in float vertColor;
 
 out vec4 color;
 
