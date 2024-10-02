@@ -106,7 +106,7 @@ int main() {
     glfwInit();
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
@@ -163,8 +163,8 @@ int main() {
         .viewport_height = initial_height,
         .game = create_game(10, 20),
         .ui_board = {
-            .padding_x = 0,
-            .padding_y = 20,
+            .padding_x = 10,
+            .padding_y = 10,
             .square_width = 0,
             .square_height = 0,
         },
@@ -203,20 +203,15 @@ int main() {
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &EBO);
 
+    UIBoardVertexData ui_board_vertex_data = generate_ui_board_vertex_data(&app);
+
     // BIND VAO
     glBindVertexArray(VAO);
-
-    UIBoardVertexData ui_board_vertex_data = generate_ui_board_vertex_data(&app);
-    DEBUG_PRINT("HI %u", ui_board_vertex_data.elements_size);
-
-    // BIND Buffer
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, ui_board_vertex_data.vertex_data_size * sizeof(float), ui_board_vertex_data.vertex_data, GL_STATIC_DRAW);
 
-    
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, ui_board_vertex_data.elements_size * sizeof(uint32_t), ui_board_vertex_data.elements_data, GL_STATIC_DRAW);
-
 
     glVertexAttribPointer(
         0,
@@ -244,9 +239,8 @@ int main() {
     // Unbind VAO
     glBindVertexArray(0);
 
+
     glUseProgram(shader_program);
-
-
     // Wireframe mode
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 

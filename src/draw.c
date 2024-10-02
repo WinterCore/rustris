@@ -13,18 +13,21 @@ TetrominoGeometry getTetrominoGeometry(TetrominoType type) {
 */
 
 void update_board_dimensions(App *app) {
-    uint32_t real_width = app->viewport_width - app->ui_board.padding_x;
-    uint32_t real_height = app->viewport_height - app->ui_board.padding_y;
+    uint32_t real_width = app->viewport_width - app->ui_board.padding_x * 2;
+    uint32_t real_height = app->viewport_height - app->ui_board.padding_y * 2;
 
-    uint32_t square_width = real_height / app->game.rows;
+    uint32_t square_height = real_height / app->game.rows;
+    uint32_t square_width = real_width / app->game.cols;
 
-    app->ui_board.square_height = square_width;
-    app->ui_board.square_width = square_width;
+    app->ui_board.square_height = square_height;
+    app->ui_board.square_width = square_height;
+
+    DEBUG_PRINT("height = %u, square_height = %u\nwidth = %u, square_width = %u", real_height, square_height, real_width, square_width);
 }
 
 UIBoardVertexData generate_ui_board_vertex_data(App *app) {
-    DEBUG_PRINT("HERERERERERERE %s\n", "world");
     uint32_t square_width = app->ui_board.square_width;
+    uint32_t square_height = app->ui_board.square_height;
 
     uint32_t rows = app->game.rows;
     uint32_t cols = app->game.cols;
@@ -60,6 +63,12 @@ UIBoardVertexData generate_ui_board_vertex_data(App *app) {
         app->ui_board.padding_y
     );
 
+    float square_gheight = remap(
+        0.0f, (float) app->viewport_height,
+        0.0f, 2.0f,
+        square_height
+    );
+
     float square_gwidth = remap(
         0.0f, (float) app->viewport_width,
         0.0f, 2.0f,
@@ -73,10 +82,10 @@ UIBoardVertexData generate_ui_board_vertex_data(App *app) {
         uint32_t col = si % (cols + 1);
 
         vertex_data[i + 0] = board_gx + (square_gwidth * col);
-        vertex_data[i + 1] = board_gy - (square_gwidth * row);
+        vertex_data[i + 1] = board_gy - (square_gheight * row);
         vertex_data[i + 2] = 0; 
 
-        DEBUG_PRINT("Vertex x=%f, y=%f\n", vertex_data[i + 0], vertex_data[i + 1]);
+        // DEBUG_PRINT("Vertex x=%f, y=%f\n", vertex_data[i + 0], vertex_data[i + 1]);
     }
 
     for (uint32_t i = 0, si = 0; i < elements_size; i += 6, si += 1) {
@@ -88,7 +97,7 @@ UIBoardVertexData generate_ui_board_vertex_data(App *app) {
         int32_t c = (vert_y * (cols + 1)) + (vert_x + 1);
         int32_t d = ((vert_y + 1) * (cols + 1)) + (vert_x + 1);
         
-        DEBUG_PRINT("Vertex a=%u, b=%u, c=%u, d=%u\n", a, b, c, d);
+        // DEBUG_PRINT("Vertex a=%u, b=%u, c=%u, d=%u\n", a, b, c, d);
 
         // Top left triangle
         elements_data[i + 0] = a;
