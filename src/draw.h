@@ -259,20 +259,20 @@ static const Tetromino TETROMINOS[7] = {
 };
 
 typedef struct UIBoard {
-    uint32_t square_width;
-    uint32_t square_height;
+    float square_gwidth;
+    float square_gheight;
 
-    uint32_t padding_y;
-    uint32_t padding_x;
+    float gx;
+    float gy;
 } UIBoard;
 
-typedef struct UIBoardVertexData {
-    uint32_t vertex_data_size;
+typedef struct VertexData {
+    uint32_t vertices_count;
     float *vertex_data;
 
-    uint32_t elements_size;
+    uint32_t elements_count;
     uint32_t *elements_data;
-} UIBoardVertexData;
+} VertexData;
 
 typedef struct App {
     uint32_t viewport_width;
@@ -284,6 +284,8 @@ typedef struct App {
 } App;
 
 void update_board_dimensions(App *app);
-UIBoardVertexData generate_ui_board_vertex_data(App *app);
+
+VertexData generate_ui_board_vertex_data(App *app);
+VertexData generate_pieces_vertex_data(App *app);
 
 #endif

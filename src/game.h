@@ -12,15 +12,14 @@ typedef enum TetrominoRotation {
 } TetrominoRotation;
 
 typedef enum TetrominoType {
-    TETRO_I = 0,
+    TETRO_EMPTY = 0,
+    TETRO_I,
     TETRO_J,
     TETRO_L,
     TETRO_O,
     TETRO_S,
     TETRO_T,
     TETRO_Z,
-
-    TETRO_EMPTY = 696969,
 } TetrominoType;
 
 typedef struct ActiveTetromino {

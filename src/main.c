@@ -20,7 +20,7 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
     app->viewport_height = height;
     update_board_dimensions(app);
 
-    DEBUG_PRINT("WINDOW RESIZE width=%u, height=%u | square width = %u", width, height, app->ui_board.square_width);
+    DEBUG_PRINT("WINDOW RESIZE width=%u, height=%u", width, height);
 }
 
 void process_input(GLFWwindow *window) {
@@ -162,12 +162,7 @@ int main() {
         .viewport_width = initial_width,
         .viewport_height = initial_height,
         .game = create_game(10, 20),
-        .ui_board = {
-            .padding_x = 10,
-            .padding_y = 10,
-            .square_width = 0,
-            .square_height = 0,
-        },
+        .ui_board = {0},
     };
     update_board_dimensions(&app);
 
@@ -184,6 +179,11 @@ int main() {
     }
 
 
+    app.game.board[0] = TETRO_I;
+    app.game.board[1] = TETRO_I;
+
+
+
     uint32_t vertex_shader = compile_vertex_shader("./shaders/main.vert");
     uint32_t fragment_shader = compile_fragment_shader("./shaders/main.frag");
 
@@ -197,21 +197,21 @@ int main() {
     glDeleteShader(vertex_shader);
     glDeleteShader(fragment_shader);
 
-    uint32_t VBO, VAO, EBO;
-    glGenVertexArrays(1, &VAO);
+    uint32_t board_vbo, board_vao, board_ebo;
+    glGenVertexArrays(1, &board_vao);
 
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
+    glGenBuffers(1, &board_vbo);
+    glGenBuffers(1, &board_ebo);
 
-    UIBoardVertexData ui_board_vertex_data = generate_ui_board_vertex_data(&app);
+    VertexData ui_board_vertex_data = generate_ui_board_vertex_data(&app);
 
     // BIND VAO
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, ui_board_vertex_data.vertex_data_size * sizeof(float), ui_board_vertex_data.vertex_data, GL_STATIC_DRAW);
+    glBindVertexArray(board_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, board_vbo);
+    glBufferData(GL_ARRAY_BUFFER, ui_board_vertex_data.vertices_count * sizeof(float), ui_board_vertex_data.vertex_data, GL_STATIC_DRAW);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, ui_board_vertex_data.elements_size * sizeof(uint32_t), ui_board_vertex_data.elements_data, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, board_ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, ui_board_vertex_data.elements_count * sizeof(uint32_t), ui_board_vertex_data.elements_data, GL_STATIC_DRAW);
 
     glVertexAttribPointer(
         0,
@@ -240,9 +240,61 @@ int main() {
     glBindVertexArray(0);
 
 
+    uint32_t pieces_vao, pieces_vbo, pieces_ebo;
+
+    VertexData pieces_vertex_data = generate_pieces_vertex_data(&app);
+
+    DEBUG_PRINT("Lengthes: %u, %u", pieces_vertex_data.vertices_count, pieces_vertex_data.elements_count);
+
+    for (size_t i = 0; i < pieces_vertex_data.vertices_count; i += 3) {
+        DEBUG_PRINT("Vertex: (%f, %f), color = %f", pieces_vertex_data.vertex_data[i], pieces_vertex_data.vertex_data[i + 1], pieces_vertex_data.vertex_data[i + 2]);
+    }
+
+
+
+    for (size_t i = 0; i < pieces_vertex_data.elements_count; i += 1) {
+        DEBUG_PRINT("Elems: %u", pieces_vertex_data.elements_data[i]);
+    }
+
+    glGenVertexArrays(1, &pieces_vao);
+    glGenBuffers(1, &pieces_vbo);
+    glGenBuffers(1, &pieces_ebo);
+
+    glBindVertexArray(pieces_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, pieces_vbo);
+    glBufferData(GL_ARRAY_BUFFER, pieces_vertex_data.vertices_count * sizeof(float), pieces_vertex_data.vertex_data, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pieces_ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, pieces_vertex_data.elements_count * sizeof(uint32_t), pieces_vertex_data.elements_data, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(
+        0,
+        2,
+        GL_FLOAT,
+        GL_FALSE,
+        3 * sizeof(float),
+        (void *) 0
+    );
+    glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(
+        1,
+        1,
+        GL_FLOAT,
+        GL_FALSE,
+        3 * sizeof(float),
+        (void *) (2 * sizeof(float))
+    );
+    glEnableVertexAttribArray(1);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    glBindVertexArray(0);
+
+
     glUseProgram(shader_program);
     // Wireframe mode
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     while (! glfwWindowShouldClose(window)) {
         // Handle inputs
@@ -253,22 +305,26 @@ int main() {
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glBindVertexArray(VAO);
-        // glDrawArrays(GL_TRIANGLES, 0, 3);
-        /*
-        glDrawArrays(GL_TRIANGLES, 3, 3);
-        */
-        glDrawElements(GL_TRIANGLES, ui_board_vertex_data.elements_size, GL_UNSIGNED_INT, 0);
+        glBindVertexArray(board_vao);
+        glDrawElements(GL_TRIANGLES, ui_board_vertex_data.elements_count, GL_UNSIGNED_INT, 0);
+        
+        glBindVertexArray(pieces_vao);
+        glDrawElements(GL_TRIANGLES, pieces_vertex_data.elements_count, GL_UNSIGNED_INT, 0);
 
+        glBindVertexArray(0);
 
         // Check and call events and swap the buffers
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &EBO);
+    /*
+    glDeleteVertexArrays(1, &board_vao);
+    glDeleteBuffers(1, &board_vbo);
+    glDeleteBuffers(1, &board_ebo);
+
+    */
+
     glDeleteProgram(shader_program);
     glfwTerminate();
 
