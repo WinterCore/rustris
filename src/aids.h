@@ -1,6 +1,7 @@
 #ifndef AIDS_H
 #define AIDS_H
 #include <stdio.h>
+#define PI 3.14159265359
 
 #ifdef DEBUG
 #define DEBUG_TEST 1
@@ -8,13 +9,15 @@
 #define DEBUG_TEST 0
 #endif
 
-#define DEBUG_PRINT(fmt, ...) \
+#define DEBUG_PRINTF(fmt, ...) \
         if (DEBUG_TEST) { \
             fprintf(stderr, "-----DEBUG----> %s:%d:%s(): " fmt "\n", __FILE__, \
                                 __LINE__, __func__, __VA_ARGS__); \
             fflush(stderr); \
         }
 
+#define DEBUG_PRINT(str) \
+    DEBUG_PRINTF(str "%s", "");
 
 #define UNIMPLEMENTED \
     fprintf(stderr, "UNIMPLEMENTED"); \

@@ -20,7 +20,7 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
     app->viewport_height = height;
     update_board_dimensions(app);
 
-    DEBUG_PRINT("WINDOW RESIZE width=%u, height=%u", width, height);
+    DEBUG_PRINTF("WINDOW RESIZE width=%u, height=%u", width, height);
 }
 
 void process_input(GLFWwindow *window) {
@@ -48,7 +48,7 @@ uint32_t compile_vertex_shader(const char *path) {
         exit(1);
     }
 
-    DEBUG_PRINT("VERTEX SHADER COMPILED SUCCESSFULLY %s", "");
+    DEBUG_PRINTF("VERTEX SHADER COMPILED SUCCESSFULLY %s", "");
 
     return vertex_shader;
 }
@@ -72,7 +72,7 @@ uint32_t compile_fragment_shader(const char *path) {
         exit(1);
     }
 
-    DEBUG_PRINT("FRAGMENT SHADER COMPILED SUCCESSFULLY %s", "");
+    DEBUG_PRINTF("FRAGMENT SHADER COMPILED SUCCESSFULLY %s", "");
 
     return fragment_shader;
 }
@@ -96,7 +96,7 @@ uint32_t create_shader_program(unsigned int shaders[], int len) {
         exit(1);
     }
 
-    DEBUG_PRINT("SHADER PROGRAM CREATED SUCCESSFULLY %s", "");
+    DEBUG_PRINTF("SHADER PROGRAM CREATED SUCCESSFULLY %s", "");
 
     return shader_program;
 }
@@ -111,8 +111,21 @@ int main() {
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
     /*
-    Tetromino tetro = TETROMINOS[TETRO_Z];
+    Tetromino tetro = TETROMINOS[TETRO_T];
+
+    Tetromino rotated = rotate_tetromino(&tetro, TETRO_R_270);
+
+    for (size_t i = 0; i < 4 * 4; i += 1) {
+        if (i % 4 == 0 && i != 0) {
+            printf("\n");
+        }
+
+        printf("%d ", rotated.squares[i]);
+    }
+    fflush(stdout);
+    */
     
+    /*
     printf("HELLO: %d\n", tetro.vertices_count);
     fflush(stdout);
     */
@@ -139,6 +152,10 @@ int main() {
     fflush(stdout);
     */
     
+    /*
+    glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
+    glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
+    */
 
     GLFWwindow *window = glfwCreateWindow(
         800,
@@ -171,6 +188,7 @@ int main() {
     glfwMakeContextCurrent(window);
 
     glfwSetFramebufferSizeCallback(window, &framebuffer_size_callback);
+
 
     if (! gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
         fprintf(stderr, "Failed to initialize GLAD\n");
@@ -244,18 +262,6 @@ int main() {
 
     VertexData pieces_vertex_data = generate_pieces_vertex_data(&app);
 
-    DEBUG_PRINT("Lengthes: %u, %u", pieces_vertex_data.vertices_count, pieces_vertex_data.elements_count);
-
-    for (size_t i = 0; i < pieces_vertex_data.vertices_count; i += 3) {
-        DEBUG_PRINT("Vertex: (%f, %f), color = %f", pieces_vertex_data.vertex_data[i], pieces_vertex_data.vertex_data[i + 1], pieces_vertex_data.vertex_data[i + 2]);
-    }
-
-
-
-    for (size_t i = 0; i < pieces_vertex_data.elements_count; i += 1) {
-        DEBUG_PRINT("Elems: %u", pieces_vertex_data.elements_data[i]);
-    }
-
     glGenVertexArrays(1, &pieces_vao);
     glGenBuffers(1, &pieces_vbo);
     glGenBuffers(1, &pieces_ebo);
@@ -294,7 +300,11 @@ int main() {
 
     glUseProgram(shader_program);
     // Wireframe mode
-    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+    for (size_t i = 0; i < pieces_vertex_data.vertices_count; i += 3) {
+        DEBUG_PRINTF("Vertex: (%f, %f), color = %f", pieces_vertex_data.vertex_data[i], pieces_vertex_data.vertex_data[i + 1], pieces_vertex_data.vertex_data[i + 2]);
+    }
 
     while (! glfwWindowShouldClose(window)) {
         // Handle inputs
@@ -322,7 +332,6 @@ int main() {
     glDeleteVertexArrays(1, &board_vao);
     glDeleteBuffers(1, &board_vbo);
     glDeleteBuffers(1, &board_ebo);
-
     */
 
     glDeleteProgram(shader_program);
