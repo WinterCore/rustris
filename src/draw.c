@@ -14,35 +14,37 @@ TetrominoGeometry getTetrominoGeometry(TetrominoType type) {
 */
 
 void update_board_dimensions(App *app) {
-    uint32_t real_width = app->viewport_width;
-    uint32_t real_height = app->viewport_height;
+    float real_width = app->viewport_width;
+    float real_height = app->viewport_height;
 
-    uint32_t square_height = real_height / app->game.rows;
-    uint32_t square_width = real_width / app->game.cols;
+    float square_height = real_height / (float) app->game.rows;
+    float square_width = real_width / (float) app->game.cols;
 
     float gx = remap(
-        0.0f, (float) app->viewport_width,
+        0.0f, real_width,
         -1.0f, 1.0f,
         0
     );
 
     float gy = remap(
-        0.0f, (float) app->viewport_height,
+        0.0f, real_height,
         -1.0f, 1.0f,
         0
     );
 
+    float square_gwidth = remap(
+        0.0f, real_width,
+        0.0f, 2.0f,
+        square_width
+    );
+
     float square_gheight = remap(
-        0.0f, (float) app->viewport_height,
+        0.0f, real_height,
         0.0f, 2.0f,
         square_height
     );
 
-    float square_gwidth = remap(
-        0.0f, (float) app->viewport_width,
-        0.0f, 2.0f,
-        square_width
-    );
+    DEBUG_PRINTF("x = %f, y = %f", real_width, real_height);
 
     app->ui_board.gx = gx;
     app->ui_board.gy = gy;
@@ -141,35 +143,41 @@ VertexData generate_pieces_vertex_data(App *app) {
     float square_gwidth = app->ui_board.square_gwidth;
     float square_gheight = app->ui_board.square_gheight;
 
-    DEBUG_PRINT("%f, %f", gx, gy);
 
-    for (size_t i = 0, vi = 0, ei = 0; i < area; i += 1, vi += 12, ei += 6) {
-        if (app->game.board[i] == TETRO_EMPTY) {
+    size_t vi = 0, ei = 0;
+
+    for (size_t i = 0; i < area; i += 1) {
+        size_t x = i % cols;
+        size_t y = i / cols;
+
+        size_t ri = (rows - 1 - y) * cols + x;
+
+        if (app->game.board[ri] == TETRO_EMPTY) {
             continue;
         }
 
-        size_t x = i % cols;
-        size_t y = i / cols;
+
+        DEBUG_PRINTF("Detected piece: (%zu != %zu) (%zu, %zu)", ri, i, x, y);
 
         // top left
         vertices[vi + 0] = gx + (square_gwidth * x);
         vertices[vi + 1] = gy + (square_gheight * y);
-        vertices[vi + 2] = app->game.board[i];
+        vertices[vi + 2] = app->game.board[ri];
         
         // top right
         vertices[vi + 3] = gx + (square_gwidth * x) + square_gwidth;
         vertices[vi + 4] = gy + (square_gheight * y);
-        vertices[vi + 5] = app->game.board[i];
+        vertices[vi + 5] = app->game.board[ri];
         
         // bottom left
         vertices[vi + 6] = gx + (square_gwidth * x);
         vertices[vi + 7] = gy + (square_gheight * y) + square_gheight;
-        vertices[vi + 8] = app->game.board[i];
+        vertices[vi + 8] = app->game.board[ri];
 
         // bottom right
         vertices[vi + 9] = gx + (square_gwidth * x) + square_gwidth;
         vertices[vi + 10] = gy + (square_gheight * y) + square_gheight;
-        vertices[vi + 11] = app->game.board[i];
+        vertices[vi + 11] = app->game.board[ri];
 
         size_t vertex_idx = (vi / 12) * 4;
         elements[ei + 0] =  vertex_idx + 0;
@@ -178,6 +186,10 @@ VertexData generate_pieces_vertex_data(App *app) {
         elements[ei + 3] =  vertex_idx + 1;
         elements[ei + 4] =  vertex_idx + 2;
         elements[ei + 5] =  vertex_idx + 3;
+
+
+        vi += 12;
+        ei += 6;
     }
 
     VertexData vertex_data = {
