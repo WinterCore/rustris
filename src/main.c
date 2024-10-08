@@ -109,54 +109,7 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-
-    /*
-    Tetromino tetro = TETROMINOS[TETRO_T];
-
-    Tetromino rotated = rotate_tetromino(&tetro, TETRO_R_270);
-
-    for (size_t i = 0; i < 4 * 4; i += 1) {
-        if (i % 4 == 0 && i != 0) {
-            printf("\n");
-        }
-
-        printf("%d ", rotated.squares[i]);
-    }
-    fflush(stdout);
-    */
     
-    /*
-    printf("HELLO: %d\n", tetro.vertices_count);
-    fflush(stdout);
-    */
-    
-    uint8_t square_width = 0;
-
-    /*
-    for (uint32_t i = 0; i < tetro.vertices_count; i += 2) {
-        // x
-        tetro.vertices[i + 0] = (2.0f / (float) BOARD_WIDTH) * tetro.vertices[i + 0] - 1;
-
-        // y
-        tetro.vertices[i + 1] = (2.0f / (float) BOARD_HEIGHT) * tetro.vertices[i + 1] - 1;
-
-        printf("X: %f, Y: %f\n", tetro.vertices[i + 0], tetro.vertices[i + 1]);
-    }
-    */
-    
-
-
-    /*
-    const char *foo = glfwGetVersionString();
-    printf("HELLO: %s\n", foo);
-    fflush(stdout);
-    */
-    
-    /*
-    glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
-    glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
-    */
-
     GLFWwindow *window = glfwCreateWindow(
         800,
         600,
@@ -197,8 +150,10 @@ int main() {
     }
 
 
+    /*
     app.game.board[0] = TETRO_I;
     app.game.board[1] = TETRO_I;
+    */
 
 
 

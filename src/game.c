@@ -77,19 +77,14 @@ Tetromino rotate_tetromino(Tetromino *tetromino, TetrominoRotation rotation) {
                 continue;
             }
 
-            DEBUG_PRINTF("point x = %zu, y = %zu", x, y);
-
             // Step 1: Translate origin point to 0,0
             float tx = ((float) x) - tetromino->origin.x;
             float ty = -((float) y) - tetromino->origin.y;
 
-            DEBUG_PRINTF("before fx = %f, fy = %f", tx, ty);
 
             // Step 2: Rotate
             float rx = tx * c - ty * s;
             float ry = tx * s + ty * c;
-
-            DEBUG_PRINTF("after fx = %f, fy = %f", rx, ry);
 
             // Step 3: Translate back
             int fx = round(rx + tetromino->origin.x);
@@ -161,8 +156,10 @@ bool is_active_tetromino_grounded(Game *game) {
             break;
         }
     }
+
+    return false;
 }
 
 void tick_game(Game *game) {
-    
+    UNIMPLEMENTED;
 }
