@@ -12,13 +12,13 @@ endif
 
 .PHONY: clean debug all executable
 
-all: executable
+all: release
 
-debug: CFLAGS += -ggdb
-debug: executable
+debug: CFLAGS += -ggdb -O0
+debug: Rustris
 
 release: CFLAGS += -DNDEBUG
-release: executable
+release: Rustris
 
 executable: Rustris
 	./Rustris

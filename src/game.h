@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#define TETRO_DROP_SECS_PER_ROW 0.5
+
 typedef struct Point {
     float x;
     float y;
@@ -32,10 +34,13 @@ typedef enum TetrominoType {
 typedef struct ActiveTetromino {
     TetrominoType tetromino_type;
     
-    uint8_t x;
-    uint8_t y;
+    uint32_t x;
+    uint32_t y;
 
     TetrominoRotation rotation;
+
+    double simulated_time;
+    double time_exists;
 } ActiveTetromino;
 
 typedef struct Game {
@@ -46,6 +51,9 @@ typedef struct Game {
     TetrominoType *board;
 
     ActiveTetromino *active_tetromino;
+
+    bool should_rerender;
+    bool should_check_collision;
 } Game;
 
 // All tetrominos have a widthxheight = 4x4
@@ -56,7 +64,7 @@ typedef struct Tetromino {
     Point origin;
 } Tetromino;
 
-static const Tetromino TETROMINOS[7] = {
+static Tetromino TETROMINOS[7] = {
     {
         .type = TETRO_I,
         .squares = {
@@ -132,5 +140,7 @@ static const Tetromino TETROMINOS[7] = {
 Game create_game(uint8_t cols, uint8_t rows);
 TetrominoType get_next_tetromino();
 Tetromino rotate_tetromino(Tetromino *tetromino, TetrominoRotation rotation);
+void drop_new_tetromino(Game *game, TetrominoType tetro_type);
+void move_tetromino_down(Game *game);
 
 #endif
