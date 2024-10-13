@@ -200,15 +200,14 @@ VertexData generate_pieces_vertex_data(App *app) {
     // Active piece
     if (app->game.active_tetromino != NULL) {
         ActiveTetromino *active_tetromino = app->game.active_tetromino;
-        Tetromino *tetromino = &TETROMINOS[active_tetromino->tetromino_type];
-        Tetromino rotated_tetromino = rotate_tetromino(tetromino, app->game.active_tetromino->rotation);
+        Tetromino *tetromino = &active_tetromino->tetromino;
 
         size_t bx = active_tetromino->x;
         size_t by = active_tetromino->y;
 
         for (size_t py = 0; py < 4; py += 1) {
             for (size_t px = 0; px < 4; px += 1) {
-                if (! rotated_tetromino.squares[py * 4 + px]) {
+                if (! tetromino->squares[py * 4 + px]) {
                     continue;
                 }
 
@@ -221,24 +220,22 @@ VertexData generate_pieces_vertex_data(App *app) {
                 // top left
                 vertices[vi + 0] = gx + (square_gwidth * x);
                 vertices[vi + 1] = gy + (square_gheight * y);
-                vertices[vi + 2] = active_tetromino->tetromino_type;
+                vertices[vi + 2] = tetromino->type;
 
-                DEBUG_PRINTF("%f, %f, %f", vertices[vi + 0], vertices[vi + 1], vertices[vi + 2]);
-                
                 // top right
                 vertices[vi + 3] = gx + (square_gwidth * x) + square_gwidth;
                 vertices[vi + 4] = gy + (square_gheight * y);
-                vertices[vi + 5] = active_tetromino->tetromino_type;
+                vertices[vi + 5] = tetromino->type;
                 
                 // bottom left
                 vertices[vi + 6] = gx + (square_gwidth * x);
                 vertices[vi + 7] = gy + (square_gheight * y) + square_gheight;
-                vertices[vi + 8] = active_tetromino->tetromino_type;
+                vertices[vi + 8] = tetromino->type;
 
                 // bottom right
                 vertices[vi + 9] = gx + (square_gwidth * x) + square_gwidth;
                 vertices[vi + 10] = gy + (square_gheight * y) + square_gheight;
-                vertices[vi + 11] = active_tetromino->tetromino_type;
+                vertices[vi + 11] = tetromino->type;
 
                 size_t vertex_idx = (vi / 12) * 4;
                 elements[ei + 0] =  vertex_idx + 0;

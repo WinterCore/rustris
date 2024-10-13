@@ -275,9 +275,11 @@ int main() {
     while (! glfwWindowShouldClose(window)) {
         // Handle inputs
         process_input(window);
+        glfwPollEvents();
 
         calculateFPS(&app);
-        move_tetromino_down(&app.game);
+        handle_tetromino_horizontal_movement(window, &app.game);
+        handle_tetromino_vertical_movement(window, &app.game);
 
         // Rendering
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
