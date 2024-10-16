@@ -19,6 +19,13 @@ typedef enum TetrominoRotation {
     TETRO_R_270 = 270,
 } TetrominoRotation;
 
+typedef struct WallKickData {
+    TetrominoRotation rotation_from;
+    TetrominoRotation rotation_to;
+
+    Point tests[5];
+} WallkickData;
+
 typedef enum TetrominoType {
     TETRO_I = 0,
     TETRO_J,
@@ -147,6 +154,105 @@ static Tetromino TETROMINOS[7] = {
             0, 0, 0, 0,
         },
         .origin = { .x = 1.5, .y = -1.5 },
+    },
+};
+
+/**
+ * Wall kick data for the pieces: J, L, T, S, Z
+ */
+static WallkickData TETROMINO_WALLKICK_DATA_GENERIC[8] = {
+    {
+        .rotation_from = TETRO_R_000,
+        .rotation_to = TETRO_R_090,
+        .tests = {{0, 0}, {-1, 0}, {-1, -1}, {0, 2}, {-1, 2}},
+    },
+    {
+        .rotation_from = TETRO_R_090,
+        .rotation_to = TETRO_R_000,
+        .tests = {{0, 0}, {1, 0}, {1, 1}, {0, -2}, {1, -2},
+        },
+    },
+
+    {
+        .rotation_from = TETRO_R_090,
+        .rotation_to = TETRO_R_180,
+        .tests = {{0, 0}, {1, 0}, {1, 1}, {0, -2}, {1, -2}},
+    },
+    {
+        .rotation_from = TETRO_R_180,
+        .rotation_to = TETRO_R_090,
+        .tests = {{0, 0}, {-1, 0}, {-1, -1}, {0, 2}, {-1, 2}},
+    },
+
+    {
+        .rotation_from = TETRO_R_180,
+        .rotation_to = TETRO_R_270,
+        .tests = {{0, 0}, {1, 0}, {1, -1}, {0, 2}, {1, 2}},
+    },
+    {
+        .rotation_from = TETRO_R_270,
+        .rotation_to = TETRO_R_180,
+        .tests = {{0, 0}, {-1, 0}, {-1, 1}, {0, -2}, {-1, -2}},
+    },
+
+    {
+        .rotation_from = TETRO_R_270,
+        .rotation_to = TETRO_R_000,
+        .tests = {{0, 0}, {-1, 0}, {-1, 1}, {0, -2}, {-1, -2}},
+    },
+    {
+        .rotation_from = TETRO_R_000,
+        .rotation_to = TETRO_R_270,
+        .tests = {{0, 0}, {1, 0}, {1, -1}, {0, 2}, {1, 2}},
+    },
+};
+
+/**
+ * Wall kick data for the pieces: J, L, T, S, Z
+ */
+static WallkickData TETROMINO_WALLKICK_DATA_L_PIECE[8] = {
+    {
+        .rotation_from = TETRO_R_000,
+        .rotation_to = TETRO_R_090,
+        .tests = {{0, 0}, {-2, 0}, {1, 0}, {-2, 1}, {1, -2}},
+    },
+    {
+        .rotation_from = TETRO_R_090,
+        .rotation_to = TETRO_R_000,
+        .tests = {{0, 0}, {2, 0}, {-1, 0}, {2, -1}, {-1, 2}},
+    },
+
+    {
+        .rotation_from = TETRO_R_090,
+        .rotation_to = TETRO_R_180,
+        .tests = {{0, 0}, {-1, 0}, {2, 0}, {-1, -2}, {2, 1}},
+    },
+    {
+        .rotation_from = TETRO_R_180,
+        .rotation_to = TETRO_R_090,
+        .tests = {{0, 0}, {1, 0}, {-2, 0}, {1, 2}, {-2, -1}},
+    },
+
+    {
+        .rotation_from = TETRO_R_180,
+        .rotation_to = TETRO_R_270,
+        .tests = {{0, 0}, {2, 0}, {-1, 0}, {2, -1}, {-1, 2}},
+    },
+    {
+        .rotation_from = TETRO_R_270,
+        .rotation_to = TETRO_R_180,
+        .tests = {{0, 0}, {-2, 0}, {1, 0}, {-2, 1}, {1, -2}},
+    },
+
+    {
+        .rotation_from = TETRO_R_270,
+        .rotation_to = TETRO_R_000,
+        .tests = {{0, 0}, {1, 0}, {-2, 0}, {1, 2}, {-2, -1}},
+    },
+    {
+        .rotation_from = TETRO_R_000,
+        .rotation_to = TETRO_R_270,
+        .tests = {{0, 0}, {-1, 0}, {2, 0}, {-1, -2}, {2, 1}},
     },
 };
 
