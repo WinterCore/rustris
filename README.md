@@ -7,7 +7,10 @@ This project was supposed to be written in Rust but I changed my mind because ap
 
 ### TODO
 
-- Don't use any terms from the real Tetris game, and make it undiscoverable
+- Implement the basic game
+- Improve the UI
+- Add a better RNG
+- Add multiplayer
 
 
 ### References

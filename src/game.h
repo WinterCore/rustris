@@ -1,8 +1,11 @@
 #ifndef GAME_H
 #define GAME_H
 
+#include <GLFW/glfw3.h>
 #include <stdint.h>
 #include <stdbool.h>
+
+#define TETRO_DROP_SECS_PER_ROW 1
 
 typedef struct Point {
     float x;
@@ -14,7 +17,6 @@ typedef enum TetrominoRotation {
     TETRO_R_090 = 90,
     TETRO_R_180 = 180,
     TETRO_R_270 = 270,
-    TETRO_R_360 = 360,
 } TetrominoRotation;
 
 typedef enum TetrominoType {
@@ -29,24 +31,12 @@ typedef enum TetrominoType {
     TETRO_EMPTY = 6969,
 } TetrominoType;
 
-typedef struct ActiveTetromino {
-    TetrominoType tetromino_type;
-    
-    uint8_t x;
-    uint8_t y;
-
-    TetrominoRotation rotation;
-} ActiveTetromino;
-
-typedef struct Game {
-    uint8_t cols;
-    uint8_t rows;
-
-    // Array
-    TetrominoType *board;
-
-    ActiveTetromino *active_tetromino;
-} Game;
+typedef enum Direction {
+    DIR_RIGHT,
+    DIR_LEFT,
+    DIR_UP,
+    DIR_DOWN,
+} CollisionDir;
 
 // All tetrominos have a widthxheight = 4x4
 typedef struct Tetromino {
@@ -56,7 +46,38 @@ typedef struct Tetromino {
     Point origin;
 } Tetromino;
 
-static const Tetromino TETROMINOS[7] = {
+typedef struct ActiveTetromino {
+    Tetromino tetromino;
+    
+    int32_t x;
+    int32_t y;
+
+    double simulated_time;
+    double time_exists;
+} ActiveTetromino;
+
+typedef enum GameKey {
+    KEY_UP = 0,
+    KEY_RIGHT,
+    KEY_DOWN,
+    KEY_LEFT,
+} GameKey;
+
+typedef struct Game {
+    uint8_t cols;
+    uint8_t rows;
+
+    // Array
+    TetrominoType *board;
+
+    ActiveTetromino *active_tetromino;
+
+    bool should_rerender;
+
+    bool input_tap_state[4];
+} Game;
+
+static Tetromino TETROMINOS[7] = {
     {
         .type = TETRO_I,
         .squares = {
@@ -129,8 +150,14 @@ static const Tetromino TETROMINOS[7] = {
     },
 };
 
+bool is_key_tapped(GLFWwindow *window, Game *game, GameKey key);
+
 Game create_game(uint8_t cols, uint8_t rows);
 TetrominoType get_next_tetromino();
+
 Tetromino rotate_tetromino(Tetromino *tetromino, TetrominoRotation rotation);
+void drop_new_tetromino(Game *game, TetrominoType tetro_type);
+void handle_tetromino_vertical_movement(GLFWwindow *window, Game *game);
+void handle_tetromino_horizontal_movement(GLFWwindow *window, Game *game);
 
 #endif

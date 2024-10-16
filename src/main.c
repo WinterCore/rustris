@@ -152,8 +152,8 @@ int main() {
 
     /*
     app.game.board[0] = TETRO_I;
-    app.game.board[1] = TETRO_I;
-    */
+    app.game.board[1] = TETRO_I; */
+    drop_new_tetromino(&app.game, TETRO_I);
 
 
 
@@ -223,10 +223,25 @@ int main() {
 
     glBindVertexArray(pieces_vao);
     glBindBuffer(GL_ARRAY_BUFFER, pieces_vbo);
-    glBufferData(GL_ARRAY_BUFFER, pieces_vertex_data.vertices_count * sizeof(float), pieces_vertex_data.vertex_data, GL_STATIC_DRAW);
+    glBufferData(
+        GL_ARRAY_BUFFER,
+        pieces_vertex_data.vertices_count * sizeof(float),
+        pieces_vertex_data.vertex_data,
+        GL_STATIC_DRAW
+    );
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pieces_ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, pieces_vertex_data.elements_count * sizeof(uint32_t), pieces_vertex_data.elements_data, GL_STATIC_DRAW);
+    glBufferData(
+        GL_ELEMENT_ARRAY_BUFFER,
+        pieces_vertex_data.elements_count * sizeof(uint32_t),
+        pieces_vertex_data.elements_data,
+        GL_STATIC_DRAW
+    );
+
+    for (size_t i = 0; i < pieces_vertex_data.vertices_count; i += 3) {
+        DEBUG_PRINTF("(%f, %f), c = %f", pieces_vertex_data.vertex_data[i + 0], pieces_vertex_data.vertex_data[i + 1], pieces_vertex_data.vertex_data[i + 2]);
+
+    }
 
     glVertexAttribPointer(
         0,
@@ -257,18 +272,45 @@ int main() {
     // Wireframe mode
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-    for (size_t i = 0; i < pieces_vertex_data.vertices_count; i += 3) {
-        DEBUG_PRINTF("Vertex: (%f, %f), color = %f", pieces_vertex_data.vertex_data[i], pieces_vertex_data.vertex_data[i + 1], pieces_vertex_data.vertex_data[i + 2]);
-    }
-
     while (! glfwWindowShouldClose(window)) {
         // Handle inputs
         process_input(window);
+        glfwPollEvents();
 
+        calculateFPS(&app);
+        handle_tetromino_horizontal_movement(window, &app.game);
+        handle_tetromino_vertical_movement(window, &app.game);
 
         // Rendering
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
+
+        if (app.game.should_rerender) {
+            free(pieces_vertex_data.vertex_data);
+            free(pieces_vertex_data.elements_data);
+
+            pieces_vertex_data = generate_pieces_vertex_data(&app);
+
+            glBindBuffer(GL_ARRAY_BUFFER, pieces_vbo);
+            glBufferData(
+                GL_ARRAY_BUFFER,
+                pieces_vertex_data.vertices_count * sizeof(float),
+                pieces_vertex_data.vertex_data,
+                GL_STATIC_DRAW
+            );
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pieces_ebo);
+            glBufferData(
+                GL_ELEMENT_ARRAY_BUFFER,
+                pieces_vertex_data.elements_count * sizeof(uint32_t),
+                pieces_vertex_data.elements_data,
+                GL_STATIC_DRAW
+            );
+
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+            app.game.should_rerender = false;
+        }
+        
 
         glBindVertexArray(board_vao);
         glDrawElements(GL_TRIANGLES, ui_board_vertex_data.elements_count, GL_UNSIGNED_INT, 0);

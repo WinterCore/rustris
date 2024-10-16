@@ -1,5 +1,8 @@
+#include <GLFW/glfw3.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <math.h>
 #include <assert.h>
@@ -25,6 +28,8 @@ Game create_game(uint8_t cols, uint8_t rows) {
         .rows = rows,
         .board = board,
         .active_tetromino = NULL,
+        .should_rerender = true,
+        .input_tap_state = {0},
     };
 
 
@@ -60,7 +65,7 @@ Tetromino rotate_tetromino(Tetromino *tetromino, TetrominoRotation rotation) {
         .squares = {0},
     };
 
-    if (rotation == TETRO_R_000 || rotation == TETRO_R_360) {
+    if (rotation == TETRO_R_000) {
         for (size_t i = 0; i < 16; i += 1) {
             rotated_tetro.squares[i] = tetromino->squares[i];
         }
@@ -92,8 +97,7 @@ Tetromino rotate_tetromino(Tetromino *tetromino, TetrominoRotation rotation) {
 
 
             switch (rotation) {
-                case TETRO_R_000:
-                case TETRO_R_360: {
+                case TETRO_R_000: {
                     break;
                 }
                 case TETRO_R_090: {
@@ -111,8 +115,10 @@ Tetromino rotate_tetromino(Tetromino *tetromino, TetrominoRotation rotation) {
                 }
             }
 
+            /*
             DEBUG_PRINTF("final fx = %d, fy = %d", fx, fy);
             DEBUG_PRINT("-------------");
+            */
             
             int idx = fy * 4 + fx;
 
@@ -126,40 +132,180 @@ Tetromino rotate_tetromino(Tetromino *tetromino, TetrominoRotation rotation) {
 }
 
 void drop_new_tetromino(Game *game, TetrominoType tetro_type) {
+    // TODO: Remember to free
     game->active_tetromino = malloc(sizeof(ActiveTetromino));
 
-    game->active_tetromino->tetromino_type = tetro_type;
-    game->active_tetromino->rotation = TETRO_R_000;
+    memcpy(&game->active_tetromino->tetromino, &TETROMINOS[tetro_type], sizeof(Tetromino));
+
     game->active_tetromino->x = (game->cols / 2) - 2;
     game->active_tetromino->y = 0;
+
+    double time = glfwGetTime();
+
+    game->active_tetromino->time_exists = time;
+    game->active_tetromino->simulated_time = time;
 }
 
-bool is_active_tetromino_grounded(Game *game) {
-    const Tetromino *at = &TETROMINOS[game->active_tetromino->tetromino_type];
 
-    for (size_t x = 0; x < 4; x += 1) {
-        for (size_t y = 3; y >= 0; y -= 1) {
-            size_t i = y * 4 + x;
+bool check_collision(
+    Game *game,
+    ActiveTetromino *at,
+    CollisionDir dir
+) {
+    int32_t by = at->y;
+    int32_t bx = at->x;
+    
+    switch (dir) {
+        case DIR_UP: {
+            by -= 1;
+            break;
+        }
+        case DIR_DOWN: {
+            by += 1;
+            break;
+        }
+        case DIR_LEFT: {
+            bx -= 1;
+            break;
+        }
+        case DIR_RIGHT: {
+            bx += 1;
+            break;
+        }
+    }
 
-            if (! at->squares[i]) {
+    for (int32_t py = 0; py < 4; py += 1) {
+        for (int32_t px = 0; px < 4; px += 1) {
+            int32_t i = py * 4 + px;
+
+            if (! at->tetromino.squares[i]) {
                 continue;
             }
             
-            size_t board_x = game->active_tetromino->x + x;
-            size_t board_y = game->active_tetromino->y + y;
-
-            if (board_y + 1 == game->rows || game->board[(board_y + 1) * game->cols + board_x] != TETRO_EMPTY) {
+            int32_t x = bx + px;
+            int32_t y = by + py;
+            
+            if (y < 0 || y >= game->rows || x < 0 || x >= game->cols) {
                 return true;
             }
 
-
-            break;
+            if (game->board[y * game->cols + x] != TETRO_EMPTY) {
+                return true;
+            }
         }
     }
 
     return false;
 }
 
-void tick_game(Game *game) {
-    UNIMPLEMENTED;
+void settle_active_tetromino_on_board(Game *game) {
+    assert(game->active_tetromino != NULL && "Active tetromino should be present");
+
+    int32_t bx = game->active_tetromino->x;
+    int32_t by = game->active_tetromino->y;
+    Tetromino *tetromino = &game->active_tetromino->tetromino;
+
+    for (int32_t ty = 0; ty < 4; ty += 1) {
+        for (int32_t tx = 0; tx < 4; tx += 1) {
+            if (! tetromino->squares[ty * 4 + tx]) {
+                continue;
+            }
+
+            int32_t x = bx + tx;
+            int32_t y = by + ty;
+
+            game->board[y * game->cols + x] = tetromino->type;
+        }
+    }
+}
+
+// TOOD: Add levels later on
+void handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
+    // TODO: Implement loss condition
+    assert(game->active_tetromino != NULL && "Active tetromino should be present");
+
+    double *time_exists = &game->active_tetromino->time_exists;
+    double *simulated_time = &game->active_tetromino->simulated_time;
+
+    *time_exists = glfwGetTime();
+
+    if (is_key_tapped(window, game, KEY_DOWN) && ! check_collision(game, game->active_tetromino, DIR_DOWN)) {
+        game->active_tetromino->y += 1;
+        game->should_rerender = true;
+        *simulated_time = *time_exists;
+    }
+
+    while (*time_exists > *simulated_time + TETRO_DROP_SECS_PER_ROW) {
+        game->should_rerender = true;
+
+        if (check_collision(game, game->active_tetromino, DIR_DOWN)) {
+            settle_active_tetromino_on_board(game);
+            free(game->active_tetromino);
+            drop_new_tetromino(game, get_next_tetromino());
+
+            break;
+        }
+
+        game->active_tetromino->y += 1;
+        DEBUG_PRINTF("TETRO Y = %hu", game->active_tetromino->y);
+        *simulated_time += TETRO_DROP_SECS_PER_ROW;        
+    }
+
+    if (is_key_tapped(window, game, KEY_UP)) {
+        game->active_tetromino->tetromino = rotate_tetromino(&game->active_tetromino->tetromino, TETRO_R_090);
+        game->should_rerender = true;
+    }
+}
+
+
+void handle_tetromino_horizontal_movement(GLFWwindow *window, Game *game) {
+    if (is_key_tapped(window, game, KEY_LEFT) && ! check_collision(game, game->active_tetromino, DIR_LEFT)) {
+        game->active_tetromino->x -= 1;
+        game->should_rerender = true;
+    }
+    
+    if (is_key_tapped(window, game, KEY_RIGHT) && ! check_collision(game, game->active_tetromino, DIR_RIGHT)) {
+        game->active_tetromino->x += 1;
+        game->should_rerender = true;
+    }
+}
+
+
+
+bool is_key_tapped(GLFWwindow *window, Game *game, GameKey key) {
+    int state;
+
+    switch (key) {
+        case KEY_DOWN: {
+            state = glfwGetKey(window, GLFW_KEY_DOWN);
+            break;
+        }
+        case KEY_RIGHT: {
+            state = glfwGetKey(window, GLFW_KEY_RIGHT);
+            break;
+        }
+        case KEY_UP: {
+            state = glfwGetKey(window, GLFW_KEY_UP);
+            break;
+        }
+        case KEY_LEFT: {
+            state = glfwGetKey(window, GLFW_KEY_LEFT);
+            break;
+        }
+    }
+    
+    if (state == GLFW_PRESS) {
+        if (! game->input_tap_state[key]) {
+            game->input_tap_state[key] = true;
+            return true;
+        }
+        
+        return false;
+    } else if (state == GLFW_RELEASE) {
+        game->input_tap_state[key] = false;
+
+        return false;
+    } else {
+        UNREACHABLE;
+    }
 }

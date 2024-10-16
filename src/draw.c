@@ -1,4 +1,5 @@
 #include "game.h"
+#include <GLFW/glfw3.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -43,8 +44,6 @@ void update_board_dimensions(App *app) {
         0.0f, 2.0f,
         square_height
     );
-
-    DEBUG_PRINTF("x = %f, y = %f", real_width, real_height);
 
     app->ui_board.gx = gx;
     app->ui_board.gy = gy;
@@ -129,6 +128,13 @@ VertexData generate_pieces_vertex_data(App *app) {
     }
 
 
+    if (app->game.active_tetromino != NULL) {
+        vertices_count += 4 * 3 * 4;
+        elements_count += 6 * 4;
+    }
+
+
+
     // TODO: Remember to deallloc when done 
     float *vertices = malloc(vertices_count * sizeof(float));
 
@@ -156,8 +162,6 @@ VertexData generate_pieces_vertex_data(App *app) {
             continue;
         }
 
-
-        DEBUG_PRINTF("Detected piece: (%zu != %zu) (%zu, %zu)", ri, i, x, y);
 
         // top left
         vertices[vi + 0] = gx + (square_gwidth * x);
@@ -192,6 +196,62 @@ VertexData generate_pieces_vertex_data(App *app) {
         ei += 6;
     }
 
+
+    // Active piece
+    if (app->game.active_tetromino != NULL) {
+        ActiveTetromino *active_tetromino = app->game.active_tetromino;
+        Tetromino *tetromino = &active_tetromino->tetromino;
+
+        size_t bx = active_tetromino->x;
+        size_t by = active_tetromino->y;
+
+        for (size_t py = 0; py < 4; py += 1) {
+            for (size_t px = 0; px < 4; px += 1) {
+                if (! tetromino->squares[py * 4 + px]) {
+                    continue;
+                }
+
+
+                size_t x = bx + px;
+                size_t y = app->game.rows - (by + py) - 1;
+
+
+
+                // top left
+                vertices[vi + 0] = gx + (square_gwidth * x);
+                vertices[vi + 1] = gy + (square_gheight * y);
+                vertices[vi + 2] = tetromino->type;
+
+                // top right
+                vertices[vi + 3] = gx + (square_gwidth * x) + square_gwidth;
+                vertices[vi + 4] = gy + (square_gheight * y);
+                vertices[vi + 5] = tetromino->type;
+                
+                // bottom left
+                vertices[vi + 6] = gx + (square_gwidth * x);
+                vertices[vi + 7] = gy + (square_gheight * y) + square_gheight;
+                vertices[vi + 8] = tetromino->type;
+
+                // bottom right
+                vertices[vi + 9] = gx + (square_gwidth * x) + square_gwidth;
+                vertices[vi + 10] = gy + (square_gheight * y) + square_gheight;
+                vertices[vi + 11] = tetromino->type;
+
+                size_t vertex_idx = (vi / 12) * 4;
+                elements[ei + 0] =  vertex_idx + 0;
+                elements[ei + 1] =  vertex_idx + 1;
+                elements[ei + 2] =  vertex_idx + 2;
+                elements[ei + 3] =  vertex_idx + 1;
+                elements[ei + 4] =  vertex_idx + 2;
+                elements[ei + 5] =  vertex_idx + 3;
+
+                vi += 12;
+                ei += 6;
+            }
+        }
+    }
+
+
     VertexData vertex_data = {
         .vertices_count = vertices_count,
         .vertex_data = vertices,
@@ -200,4 +260,21 @@ VertexData generate_pieces_vertex_data(App *app) {
     };
 
     return vertex_data;
+}
+
+float previousTime = 0.0;
+int frameCount = 0;
+
+void calculateFPS(App *app) {
+    float currentTime = glfwGetTime();
+    float deltaTime = currentTime - previousTime;
+    
+    frameCount++;
+    
+    if (deltaTime >= 1.0) {
+        app->fps = (float) frameCount / deltaTime;
+        
+        previousTime = currentTime;
+        frameCount = 0;
+    }
 }

@@ -28,11 +28,14 @@ typedef struct App {
     UIBoard ui_board;
 
     Game game;
+
+    float fps;
 } App;
 
 void update_board_dimensions(App *app);
 
 VertexData generate_ui_board_vertex_data(App *app);
 VertexData generate_pieces_vertex_data(App *app);
+void calculateFPS(App *app);
 
 #endif
