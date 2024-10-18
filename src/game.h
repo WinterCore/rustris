@@ -19,6 +19,13 @@ typedef enum TetrominoRotation {
     TETRO_R_270 = 270,
 } TetrominoRotation;
 
+typedef struct WallKickData {
+    TetrominoRotation rotation_from;
+    TetrominoRotation rotation_to;
+
+    Point tests[5];
+} WallkickData;
+
 typedef enum TetrominoType {
     TETRO_I = 0,
     TETRO_J,
@@ -31,7 +38,8 @@ typedef enum TetrominoType {
     TETRO_EMPTY = 6969,
 } TetrominoType;
 
-typedef enum Direction {
+typedef enum CollisionDirection {
+    DIR_STATIC,
     DIR_RIGHT,
     DIR_LEFT,
     DIR_UP,
@@ -48,6 +56,7 @@ typedef struct Tetromino {
 
 typedef struct ActiveTetromino {
     Tetromino tetromino;
+    TetrominoRotation rotation;
     
     int32_t x;
     int32_t y;
@@ -70,7 +79,7 @@ typedef struct Game {
     // Array
     TetrominoType *board;
 
-    ActiveTetromino *active_tetromino;
+    ActiveTetromino active_tetromino;
 
     bool should_rerender;
 
@@ -150,12 +159,110 @@ static Tetromino TETROMINOS[7] = {
     },
 };
 
+/**
+ * Wall kick data for the pieces: J, L, T, S, Z
+ */
+static WallkickData *TETROMINO_WALLKICK_DATA_GENERIC[8] = {
+    &(WallkickData) {
+        .rotation_from = TETRO_R_000,
+        .rotation_to = TETRO_R_090,
+        .tests = {{0, 0}, {-1, 0}, {-1, -1}, {0, 2}, {-1, 2}},
+    },
+    &(WallkickData) {
+        .rotation_from = TETRO_R_090,
+        .rotation_to = TETRO_R_000,
+        .tests = {{0, 0}, {1, 0}, {1, 1}, {0, -2}, {1, -2}},
+    },
+
+    &(WallkickData) {
+        .rotation_from = TETRO_R_090,
+        .rotation_to = TETRO_R_180,
+        .tests = {{0, 0}, {1, 0}, {1, 1}, {0, -2}, {1, -2}},
+    },
+    &(WallkickData) {
+        .rotation_from = TETRO_R_180,
+        .rotation_to = TETRO_R_090,
+        .tests = {{0, 0}, {-1, 0}, {-1, -1}, {0, 2}, {-1, 2}},
+    },
+
+    &(WallkickData) {
+        .rotation_from = TETRO_R_180,
+        .rotation_to = TETRO_R_270,
+        .tests = {{0, 0}, {1, 0}, {1, -1}, {0, 2}, {1, 2}},
+    },
+    &(WallkickData) {
+        .rotation_from = TETRO_R_270,
+        .rotation_to = TETRO_R_180,
+        .tests = {{0, 0}, {-1, 0}, {-1, 1}, {0, -2}, {-1, -2}},
+    },
+
+    &(WallkickData) {
+        .rotation_from = TETRO_R_270,
+        .rotation_to = TETRO_R_000,
+        .tests = {{0, 0}, {-1, 0}, {-1, 1}, {0, -2}, {-1, -2}},
+    },
+    &(WallkickData) {
+        .rotation_from = TETRO_R_000,
+        .rotation_to = TETRO_R_270,
+        .tests = {{0, 0}, {1, 0}, {1, -1}, {0, 2}, {1, 2}},
+    },
+};
+
+/**
+ * Wall kick data for the I piece
+ */
+static WallkickData *TETROMINO_WALLKICK_DATA_I_PIECE[8] = {
+    &(WallkickData) {
+        .rotation_from = TETRO_R_000,
+        .rotation_to = TETRO_R_090,
+        .tests = {{0, 0}, {-2, 0}, {1, 0}, {-2, 1}, {1, -2}},
+    },
+    &(WallkickData) {
+        .rotation_from = TETRO_R_090,
+        .rotation_to = TETRO_R_000,
+        .tests = {{0, 0}, {2, 0}, {-1, 0}, {2, -1}, {-1, 2}},
+    },
+
+    &(WallkickData) {
+        .rotation_from = TETRO_R_090,
+        .rotation_to = TETRO_R_180,
+        .tests = {{0, 0}, {-1, 0}, {2, 0}, {-1, -2}, {2, 1}},
+    },
+    &(WallkickData) {
+        .rotation_from = TETRO_R_180,
+        .rotation_to = TETRO_R_090,
+        .tests = {{0, 0}, {1, 0}, {-2, 0}, {1, 2}, {-2, -1}},
+    },
+
+    &(WallkickData) {
+        .rotation_from = TETRO_R_180,
+        .rotation_to = TETRO_R_270,
+        .tests = {{0, 0}, {2, 0}, {-1, 0}, {2, -1}, {-1, 2}},
+    },
+    &(WallkickData) {
+        .rotation_from = TETRO_R_270,
+        .rotation_to = TETRO_R_180,
+        .tests = {{0, 0}, {-2, 0}, {1, 0}, {-2, 1}, {1, -2}},
+    },
+
+    &(WallkickData) {
+        .rotation_from = TETRO_R_270,
+        .rotation_to = TETRO_R_000,
+        .tests = {{0, 0}, {1, 0}, {-2, 0}, {1, 2}, {-2, -1}},
+    },
+    &(WallkickData) {
+        .rotation_from = TETRO_R_000,
+        .rotation_to = TETRO_R_270,
+        .tests = {{0, 0}, {-1, 0}, {2, 0}, {-1, -2}, {2, 1}},
+    },
+};
+
 bool is_key_tapped(GLFWwindow *window, Game *game, GameKey key);
 
 Game create_game(uint8_t cols, uint8_t rows);
 TetrominoType get_next_tetromino();
 
-Tetromino rotate_tetromino(Tetromino *tetromino, TetrominoRotation rotation);
+Tetromino rotate_tetromino(Tetromino *tetromino, bool clockwise);
 void drop_new_tetromino(Game *game, TetrominoType tetro_type);
 void handle_tetromino_vertical_movement(GLFWwindow *window, Game *game);
 void handle_tetromino_horizontal_movement(GLFWwindow *window, Game *game);

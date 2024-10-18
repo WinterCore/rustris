@@ -58,22 +58,14 @@ float degrees_to_radians(float degrees) {
     return degrees * PI / 180;
 }
 
-Tetromino rotate_tetromino(Tetromino *tetromino, TetrominoRotation rotation) {
+Tetromino rotate_tetromino(Tetromino *tetromino, bool clockwise) {
     Tetromino rotated_tetro = {
         .origin = tetromino->origin,
         .type = tetromino->type,
         .squares = {0},
     };
 
-    if (rotation == TETRO_R_000) {
-        for (size_t i = 0; i < 16; i += 1) {
-            rotated_tetro.squares[i] = tetromino->squares[i];
-        }
-
-        return rotated_tetro;
-    }
-
-    float rads = degrees_to_radians((float) rotation);
+    float rads = degrees_to_radians(clockwise ? (float) 90 : -90);
     float s = sin(-rads), c = cos(-rads);
 
     for (size_t y = 0; y < 4; y += 1) {
@@ -95,24 +87,20 @@ Tetromino rotate_tetromino(Tetromino *tetromino, TetrominoRotation rotation) {
             int fx = round(rx + tetromino->origin.x);
             int fy = round(-(ry + tetromino->origin.y));
 
-
-            switch (rotation) {
-                case TETRO_R_000: {
-                    break;
-                }
-                case TETRO_R_090: {
-                    fx -= 1;
-                    break;
-                }
-                case TETRO_R_180: {
-                    fx -= 1;
-                    fy -= 1;
-                    break;
-                }
-                case TETRO_R_270: {
-                    fy -= 1;
-                    break;
-                }
+            /**
+             * Move the point back to the top left corner of the cell
+             *
+             * .__  90 deg rotation   __.
+             * |_|  ---------------> |_|
+             * 
+             * The following code basically always moves back the point
+             * of origin to top left
+             *
+             */
+            if (clockwise) {
+                fx -= 1;
+            } else {
+                fy -= 1;
             }
 
             /*
@@ -128,32 +116,33 @@ Tetromino rotate_tetromino(Tetromino *tetromino, TetrominoRotation rotation) {
         }
     }
 
+
     return rotated_tetro;
 }
 
 void drop_new_tetromino(Game *game, TetrominoType tetro_type) {
-    // TODO: Remember to free
-    game->active_tetromino = malloc(sizeof(ActiveTetromino));
+    memcpy(&game->active_tetromino.tetromino, &TETROMINOS[tetro_type], sizeof(Tetromino));
+    game->active_tetromino.rotation = TETRO_R_000;
 
-    memcpy(&game->active_tetromino->tetromino, &TETROMINOS[tetro_type], sizeof(Tetromino));
-
-    game->active_tetromino->x = (game->cols / 2) - 2;
-    game->active_tetromino->y = 0;
+    game->active_tetromino.x = (game->cols / 2) - 2;
+    game->active_tetromino.y = 0;
 
     double time = glfwGetTime();
 
-    game->active_tetromino->time_exists = time;
-    game->active_tetromino->simulated_time = time;
+    game->active_tetromino.time_exists = time;
+    game->active_tetromino.simulated_time = time;
 }
 
 
 bool check_collision(
     Game *game,
-    ActiveTetromino *at,
+    int32_t x,
+    int32_t y,
+    Tetromino *tetromino,
     CollisionDir dir
 ) {
-    int32_t by = at->y;
-    int32_t bx = at->x;
+    int32_t by = y;
+    int32_t bx = x;
     
     switch (dir) {
         case DIR_UP: {
@@ -172,13 +161,16 @@ bool check_collision(
             bx += 1;
             break;
         }
+        case DIR_STATIC: {
+            break;
+        }
     }
 
     for (int32_t py = 0; py < 4; py += 1) {
         for (int32_t px = 0; px < 4; px += 1) {
             int32_t i = py * 4 + px;
 
-            if (! at->tetromino.squares[i]) {
+            if (! tetromino->squares[i]) {
                 continue;
             }
             
@@ -198,12 +190,91 @@ bool check_collision(
     return false;
 }
 
-void settle_active_tetromino_on_board(Game *game) {
-    assert(game->active_tetromino != NULL && "Active tetromino should be present");
+TetrominoRotation get_next_tetromino_rotation(TetrominoRotation rotation, bool clockwise) {
+    TetrominoRotation rotations[4] = {
+        TETRO_R_000,
+        TETRO_R_090,
+        TETRO_R_180,
+        TETRO_R_270
+    };
 
-    int32_t bx = game->active_tetromino->x;
-    int32_t by = game->active_tetromino->y;
-    Tetromino *tetromino = &game->active_tetromino->tetromino;
+    size_t len = sizeof(rotations) / sizeof(rotations[0]);
+    
+    size_t i = 0;
+
+    while (i < len) {
+        if (rotation == rotations[i]) {
+            break;
+        }
+        
+        i += 1;
+    }
+
+    if (clockwise) {
+        i = (i + 1) % len;
+    } else {
+        i = i == 0 ? len - 1 : i - 1;
+    }
+    
+    return rotations[i];
+}
+
+WallkickData *get_wallkick_data(TetrominoRotation rotation_from, TetrominoRotation rotation_to, TetrominoType tetromino_type) { 
+    WallkickData **wallkick_data = tetromino_type == TETRO_I
+        ? TETROMINO_WALLKICK_DATA_I_PIECE
+        : TETROMINO_WALLKICK_DATA_GENERIC;
+    
+    size_t i = 0;
+
+    while (i < 8) {
+        if (wallkick_data[i]->rotation_from == rotation_from &&
+            wallkick_data[i]->rotation_to == rotation_to) {
+            break;
+        }
+
+        i += 1;
+    }
+
+    return wallkick_data[i];
+}
+
+ActiveTetromino try_rotate_tetromino(Game *game, ActiveTetromino *at, bool clockwise) {
+    Tetromino rotated_tetromino = rotate_tetromino(&at->tetromino, clockwise);
+
+    TetrominoRotation next_rotation = get_next_tetromino_rotation(at->rotation, clockwise);
+    WallkickData *wallkick_data = get_wallkick_data(at->rotation, next_rotation, at->tetromino.type);
+    
+    Point *tests = wallkick_data->tests;
+
+    ActiveTetromino rotated_active_tetromino = {
+        .tetromino = rotated_tetromino,
+        .rotation = next_rotation,
+        .simulated_time = at->simulated_time,
+        .time_exists = at->time_exists,
+        .x = at->x,
+        .y = at->y,
+    };
+
+    for (size_t i = 0; i < 5; i += 1) {
+        Point *test = &tests[i];
+        
+        int32_t x = rotated_active_tetromino.x + (int32_t) test->x;
+        int32_t y = rotated_active_tetromino.y + (int32_t) test->y;
+
+        if (! check_collision(game, x, y, &rotated_active_tetromino.tetromino, DIR_STATIC)) {
+            rotated_active_tetromino.x = x;
+            rotated_active_tetromino.y = y;
+            return rotated_active_tetromino;
+        }
+    }
+
+    return *at;
+}
+
+void settle_active_tetromino_on_board(Game *game) {
+    int32_t bx = game->active_tetromino.x;
+    int32_t by = game->active_tetromino.y;
+    Tetromino *tetromino = &game->active_tetromino.tetromino;
 
     for (int32_t ty = 0; ty < 4; ty += 1) {
         for (int32_t tx = 0; tx < 4; tx += 1) {
@@ -222,15 +293,16 @@ void settle_active_tetromino_on_board(Game *game) {
 // TOOD: Add levels later on
 void handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
     // TODO: Implement loss condition
-    assert(game->active_tetromino != NULL && "Active tetromino should be present");
-
-    double *time_exists = &game->active_tetromino->time_exists;
-    double *simulated_time = &game->active_tetromino->simulated_time;
+    double *time_exists = &game->active_tetromino.time_exists;
+    double *simulated_time = &game->active_tetromino.simulated_time;
 
     *time_exists = glfwGetTime();
 
-    if (is_key_tapped(window, game, KEY_DOWN) && ! check_collision(game, game->active_tetromino, DIR_DOWN)) {
-        game->active_tetromino->y += 1;
+    ActiveTetromino *at = &game->active_tetromino;
+
+    if (is_key_tapped(window, game, KEY_DOWN) &&
+        ! check_collision(game, at->x, at->y, &game->active_tetromino.tetromino, DIR_DOWN)) {
+        at->y += 1;
         game->should_rerender = true;
         *simulated_time = *time_exists;
     }
@@ -238,34 +310,35 @@ void handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
     while (*time_exists > *simulated_time + TETRO_DROP_SECS_PER_ROW) {
         game->should_rerender = true;
 
-        if (check_collision(game, game->active_tetromino, DIR_DOWN)) {
+        if (check_collision(game, at->x, at->y, &at->tetromino, DIR_DOWN)) {
             settle_active_tetromino_on_board(game);
-            free(game->active_tetromino);
             drop_new_tetromino(game, get_next_tetromino());
 
             break;
         }
 
-        game->active_tetromino->y += 1;
-        DEBUG_PRINTF("TETRO Y = %hu", game->active_tetromino->y);
+        game->active_tetromino.y += 1;
+        DEBUG_PRINTF("TETRO Y = %hu", game->active_tetromino.y);
         *simulated_time += TETRO_DROP_SECS_PER_ROW;        
     }
 
     if (is_key_tapped(window, game, KEY_UP)) {
-        game->active_tetromino->tetromino = rotate_tetromino(&game->active_tetromino->tetromino, TETRO_R_090);
+        game->active_tetromino = try_rotate_tetromino(game, &game->active_tetromino, TETRO_R_090);
         game->should_rerender = true;
     }
 }
 
 
 void handle_tetromino_horizontal_movement(GLFWwindow *window, Game *game) {
-    if (is_key_tapped(window, game, KEY_LEFT) && ! check_collision(game, game->active_tetromino, DIR_LEFT)) {
-        game->active_tetromino->x -= 1;
+    ActiveTetromino *at = &game->active_tetromino;
+
+    if (is_key_tapped(window, game, KEY_LEFT) && ! check_collision(game, at->x, at->y, &at->tetromino, DIR_LEFT)) {
+        game->active_tetromino.x -= 1;
         game->should_rerender = true;
     }
     
-    if (is_key_tapped(window, game, KEY_RIGHT) && ! check_collision(game, game->active_tetromino, DIR_RIGHT)) {
-        game->active_tetromino->x += 1;
+    if (is_key_tapped(window, game, KEY_RIGHT) && ! check_collision(game, at->x, at->y, &at->tetromino, DIR_RIGHT)) {
+        game->active_tetromino.x += 1;
         game->should_rerender = true;
     }
 }
