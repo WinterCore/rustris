@@ -80,9 +80,24 @@ typedef struct InputRepeatState {
     bool finished_initial_delay;
 } InputRepeatState;
 
+typedef struct Level {
+    uint8_t num;
+
+    /**
+     * Time spent per row in seconds
+     */
+    float gravity;
+
+    uint64_t max_lines;
+} Level;
+
 typedef struct Game {
     uint8_t cols;
     uint8_t rows;
+
+    uint64_t score;
+    uint64_t lines_cleared;
+    Level current_level;
 
     // Array
     TetrominoType *board;

@@ -12,6 +12,19 @@
 #include "./game.h"
 #include "./aids.h"
 
+Level create_level(uint8_t level) {
+    assert("Level must be > 0" && level > 0);
+
+    float gravity = pow(0.8 - (float) (level - 1) * 0.007, (float) (level - 1));
+    uint64_t max_lines = (uint64_t) level * 10;
+
+    return (Level) {
+        .gravity = gravity,
+        .max_lines = max_lines,
+        .num = level,
+    };
+}
+
 Game create_game(uint8_t cols, uint8_t rows) {
     uint32_t area = cols * rows;
     TetrominoType *board = malloc(sizeof(TetrominoType) * area);
@@ -31,8 +44,8 @@ Game create_game(uint8_t cols, uint8_t rows) {
         .should_rerender = true,
         .input_tap_state = {0},
         .input_repeat_state = {0},
+        .current_level = create_level(1),
     };
-
 
     return game;
 }
@@ -270,6 +283,34 @@ ActiveTetromino try_rotate_tetromino(Game *game, ActiveTetromino *at, bool clock
     return *at;
 }
 
+void clear_lines(Game *game, int32_t y, size_t count) {
+    DEBUG_PRINT("CLEARING DOGSHIT");
+    size_t row_start = y * game->cols;
+    memcpy(&game->board[game->cols * count], &game->board[0], row_start * sizeof(TetrominoType));
+    game->should_rerender = true;
+}
+
+void try_clear_lines(Game *game, int32_t by) {
+    for (int32_t y = 0; y < 4; y += 1) {
+        bool has_gaps = false;
+
+        // TODO: Fix out of bounds indices
+        for (int32_t x = 0; x < game->cols; x += 1) {
+            if (game->board[(by + y) * game->cols + x] == TETRO_EMPTY) {
+                has_gaps = true;
+                break;
+            }
+        }
+        
+        if (has_gaps) {
+            continue;
+        }
+
+        // Clear line
+        clear_lines(game, by + y, 1);
+    }
+}
+
 void settle_active_tetromino_on_board(Game *game) {
     int32_t bx = game->active_tetromino.x;
     int32_t by = game->active_tetromino.y;
@@ -287,6 +328,8 @@ void settle_active_tetromino_on_board(Game *game) {
             game->board[y * game->cols + x] = tetromino->type;
         }
     }
+
+    try_clear_lines(game, by);
 }
 
 // TOOD: Add levels later on
