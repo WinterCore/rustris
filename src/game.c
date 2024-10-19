@@ -30,6 +30,7 @@ Game create_game(uint8_t cols, uint8_t rows) {
         .active_tetromino = NULL,
         .should_rerender = true,
         .input_tap_state = {0},
+        .input_repeat_state = {0},
     };
 
 
@@ -129,7 +130,6 @@ void drop_new_tetromino(Game *game, TetrominoType tetro_type) {
 
     double time = glfwGetTime();
 
-    game->active_tetromino.time_exists = time;
     game->active_tetromino.simulated_time = time;
 }
 
@@ -250,7 +250,6 @@ ActiveTetromino try_rotate_tetromino(Game *game, ActiveTetromino *at, bool clock
         .tetromino = rotated_tetromino,
         .rotation = next_rotation,
         .simulated_time = at->simulated_time,
-        .time_exists = at->time_exists,
         .x = at->x,
         .y = at->y,
     };
@@ -293,21 +292,27 @@ void settle_active_tetromino_on_board(Game *game) {
 // TOOD: Add levels later on
 void handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
     // TODO: Implement loss condition
-    double *time_exists = &game->active_tetromino.time_exists;
     double *simulated_time = &game->active_tetromino.simulated_time;
 
-    *time_exists = glfwGetTime();
+    double time = glfwGetTime();
 
     ActiveTetromino *at = &game->active_tetromino;
 
-    if (is_key_tapped(window, game, KEY_DOWN) &&
-        ! check_collision(game, at->x, at->y, &game->active_tetromino.tetromino, DIR_DOWN)) {
-        at->y += 1;
+    if (is_key_tapped(window, game, KEY_DOWN)) {
         game->should_rerender = true;
-        *simulated_time = *time_exists;
+
+        if (check_collision(game, at->x, at->y, &game->active_tetromino.tetromino, DIR_DOWN)) {
+            settle_active_tetromino_on_board(game);
+            drop_new_tetromino(game, get_next_tetromino());
+
+            return;
+        } else {
+            at->y += 1;
+            *simulated_time = time;
+        }
     }
 
-    while (*time_exists > *simulated_time + TETRO_DROP_SECS_PER_ROW) {
+    while (time > *simulated_time + TETRO_DROP_SECS_PER_ROW) {
         game->should_rerender = true;
 
         if (check_collision(game, at->x, at->y, &at->tetromino, DIR_DOWN)) {
@@ -326,6 +331,24 @@ void handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
         game->active_tetromino = try_rotate_tetromino(game, &game->active_tetromino, TETRO_R_090);
         game->should_rerender = true;
     }
+
+    uint32_t down_repeats = get_held_key_repeats(window, game, KEY_DOWN);
+
+    while (down_repeats > 0) {
+        game->should_rerender = true;
+
+        if (check_collision(game, at->x, at->y, &game->active_tetromino.tetromino, DIR_DOWN)) {
+            settle_active_tetromino_on_board(game);
+            drop_new_tetromino(game, get_next_tetromino());
+
+            return;
+        } else {
+            at->y += 1;
+            *simulated_time = time;
+        }
+
+        down_repeats -= 1;
+    }
 }
 
 
@@ -341,44 +364,111 @@ void handle_tetromino_horizontal_movement(GLFWwindow *window, Game *game) {
         game->active_tetromino.x += 1;
         game->should_rerender = true;
     }
+    
+    uint32_t right_repeats = get_held_key_repeats(window, game, KEY_RIGHT);
+
+    while (right_repeats > 0) {
+        if (! check_collision(game, at->x, at->y, &at->tetromino, DIR_RIGHT)) {
+            game->should_rerender = true;
+            game->active_tetromino.x += right_repeats;
+        }
+
+        right_repeats -= 1;
+    }
+
+    uint32_t left_repeats = get_held_key_repeats(window, game, KEY_LEFT);
+
+    while (left_repeats > 0) {
+        if (! check_collision(game, at->x, at->y, &at->tetromino, DIR_LEFT)) {
+            game->should_rerender = true;
+            game->active_tetromino.x -= left_repeats;
+        }
+
+        left_repeats -= 1;
+    }
 }
 
 
+int game_key_to_glfw_key(GameKey key) {
+    switch (key) {
+        case KEY_DOWN: return GLFW_KEY_DOWN;
+        case KEY_RIGHT: return GLFW_KEY_RIGHT;
+        case KEY_UP: return GLFW_KEY_UP;
+        case KEY_LEFT: return GLFW_KEY_LEFT;
+    }
+
+    UNREACHABLE;
+}
+
 
 bool is_key_tapped(GLFWwindow *window, Game *game, GameKey key) {
-    int state;
-
-    switch (key) {
-        case KEY_DOWN: {
-            state = glfwGetKey(window, GLFW_KEY_DOWN);
-            break;
-        }
-        case KEY_RIGHT: {
-            state = glfwGetKey(window, GLFW_KEY_RIGHT);
-            break;
-        }
-        case KEY_UP: {
-            state = glfwGetKey(window, GLFW_KEY_UP);
-            break;
-        }
-        case KEY_LEFT: {
-            state = glfwGetKey(window, GLFW_KEY_LEFT);
-            break;
-        }
-    }
+    int glfw_key = game_key_to_glfw_key(key);
+    int key_state = glfwGetKey(window, glfw_key);
     
-    if (state == GLFW_PRESS) {
+    if (key_state == GLFW_PRESS) {
         if (! game->input_tap_state[key]) {
             game->input_tap_state[key] = true;
             return true;
         }
         
         return false;
-    } else if (state == GLFW_RELEASE) {
+    } else if (key_state == GLFW_RELEASE) {
         game->input_tap_state[key] = false;
 
         return false;
     } else {
         UNREACHABLE;
     }
+}
+
+/**
+ * Get the number of repeats since the last call to this function
+ *
+ *
+ * IMPORTANT: DO NOT call this function from multiple places or you'll
+ * get unexpected results
+ */
+uint32_t get_held_key_repeats(GLFWwindow *window, Game *game, GameKey key) {
+    int glfw_key = game_key_to_glfw_key(key);
+    int key_state = glfwGetKey(window, glfw_key);
+    InputRepeatState *state = &game->input_repeat_state[key];
+
+    if (key_state == GLFW_RELEASE) {
+        state->simulated_time = 0;
+        state->finished_initial_delay = false;
+
+        return 0;
+    }
+    
+    if (state->simulated_time == 0) {
+        state->simulated_time = glfwGetTime();
+
+        return 0;
+    }
+
+    double time = glfwGetTime();
+
+    if (! state->finished_initial_delay) {
+        double delay = (float) KEY_REPEAT_INITIAL_DELAY_MS / 1000.0f;
+
+        if (state->simulated_time + delay < time) {
+            state->simulated_time += delay;
+            state->finished_initial_delay = true;
+            // Fall through
+        } else {
+            return 0;
+        }
+    }
+
+    double repeat_rate_delay = 1.0f / (float) KEY_REPEAT_RATE;
+    
+    uint32_t repeats = 0;
+
+    while (state->simulated_time + repeat_rate_delay < time) {
+        repeats += 1;
+
+        state->simulated_time += repeat_rate_delay;
+    }
+
+    return repeats;
 }

@@ -7,6 +7,10 @@
 
 #define TETRO_DROP_SECS_PER_ROW 1
 
+
+#define KEY_REPEAT_INITIAL_DELAY_MS 200
+#define KEY_REPEAT_RATE 20 // per second
+
 typedef struct Point {
     float x;
     float y;
@@ -62,7 +66,6 @@ typedef struct ActiveTetromino {
     int32_t y;
 
     double simulated_time;
-    double time_exists;
 } ActiveTetromino;
 
 typedef enum GameKey {
@@ -71,6 +74,11 @@ typedef enum GameKey {
     KEY_DOWN,
     KEY_LEFT,
 } GameKey;
+
+typedef struct InputRepeatState {
+    double simulated_time;
+    bool finished_initial_delay;
+} InputRepeatState;
 
 typedef struct Game {
     uint8_t cols;
@@ -84,6 +92,7 @@ typedef struct Game {
     bool should_rerender;
 
     bool input_tap_state[4];
+    InputRepeatState input_repeat_state[4];
 } Game;
 
 static Tetromino TETROMINOS[7] = {
@@ -258,6 +267,7 @@ static WallkickData *TETROMINO_WALLKICK_DATA_I_PIECE[8] = {
 };
 
 bool is_key_tapped(GLFWwindow *window, Game *game, GameKey key);
+uint32_t get_held_key_repeats(GLFWwindow *window, Game *game, GameKey key);
 
 Game create_game(uint8_t cols, uint8_t rows);
 TetrominoType get_next_tetromino();
