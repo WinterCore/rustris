@@ -142,7 +142,6 @@ int main() {
 
     glfwSetFramebufferSizeCallback(window, &framebuffer_size_callback);
 
-
     if (! gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
         fprintf(stderr, "Failed to initialize GLAD\n");
         glfwTerminate();
@@ -153,7 +152,7 @@ int main() {
     /*
     app.game.board[0] = TETRO_I;
     app.game.board[1] = TETRO_I; */
-    drop_new_tetromino(&app.game, TETRO_I);
+    // drop_new_tetromino(&app.game, TETRO_I);
 
 
 
