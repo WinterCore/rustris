@@ -12,6 +12,19 @@
 #include "./game.h"
 #include "./aids.h"
 
+Level create_level(uint8_t level) {
+    assert("Level must be > 0" && level > 0);
+
+    float gravity = pow(0.9 - (float) (level - 1) * 0.007, (float) (level - 1));
+    uint64_t max_lines = (uint64_t) level * 10;
+
+    return (Level) {
+        .gravity = gravity,
+        .max_lines = max_lines,
+        .num = level,
+    };
+}
+
 Game create_game(uint8_t cols, uint8_t rows) {
     uint32_t area = cols * rows;
     TetrominoType *board = malloc(sizeof(TetrominoType) * area);
@@ -27,12 +40,13 @@ Game create_game(uint8_t cols, uint8_t rows) {
         .cols = cols,
         .rows = rows,
         .board = board,
-        .active_tetromino = NULL,
         .should_rerender = true,
         .input_tap_state = {0},
         .input_repeat_state = {0},
+        .current_level = create_level(1),
     };
 
+    drop_new_tetromino(&game, get_next_tetromino());
 
     return game;
 }
@@ -40,6 +54,8 @@ Game create_game(uint8_t cols, uint8_t rows) {
 
 
 TetrominoType get_next_tetromino() {
+    return TETRO_O;
+
     static TetrominoType types[] = {
         TETRO_I,
         TETRO_J,
@@ -270,6 +286,59 @@ ActiveTetromino try_rotate_tetromino(Game *game, ActiveTetromino *at, bool clock
     return *at;
 }
 
+void clear_lines(Game *game, int32_t y, size_t count) {
+    size_t row_start = y * game->cols;
+    memcpy(&game->board[game->cols * count], &game->board[0], row_start * sizeof(TetrominoType));
+    game->should_rerender = true;
+}
+
+uint64_t try_clear_lines(Game *game, int32_t by) {
+    uint64_t lines_cleared = 0;
+
+    for (int32_t y = 0; y < 4; y += 1) {
+        bool has_gaps = false;
+
+        if (by + y >= game->rows) {
+            break;
+        }
+
+        for (int32_t x = 0; x < game->cols; x += 1) {
+            if (game->board[(by + y) * game->cols + x] == TETRO_EMPTY) {
+                has_gaps = true;
+                break;
+            }
+        }
+        
+        if (has_gaps) {
+            continue;
+        }
+
+        // Clear line
+        clear_lines(game, by + y, 1);
+        lines_cleared += 1;
+    }
+
+    return lines_cleared;
+}
+
+uint64_t get_cleared_lines_score(Game *game, uint64_t num_lines) {
+    assert("Lines should be between 0 and 4" && num_lines <= 4);
+
+    // TODO: Add scoring for T spins, perfect clears and combos
+    switch (num_lines) {
+        case 1:
+            return 100 * game->current_level.num;
+        case 2:
+            return 300 * game->current_level.num;
+        case 3:
+            return 500 * game->current_level.num;
+        case 5:
+            return 800 * game->current_level.num;
+    }
+    
+    return 0;
+}
+
 void settle_active_tetromino_on_board(Game *game) {
     int32_t bx = game->active_tetromino.x;
     int32_t by = game->active_tetromino.y;
@@ -287,9 +356,22 @@ void settle_active_tetromino_on_board(Game *game) {
             game->board[y * game->cols + x] = tetromino->type;
         }
     }
+
+    uint64_t lines_cleared = try_clear_lines(game, by);
+
+    if (lines_cleared > 0) {
+        game->lines_cleared += lines_cleared;
+        uint64_t score_delta = get_cleared_lines_score(game, lines_cleared);
+        game->score += score_delta;
+
+        if (game->lines_cleared >= game->current_level.max_lines) {
+            game->current_level = create_level(game->current_level.num + 1);
+        }
+
+        DEBUG_PRINTF("LEVEL = %hu, CLEARED LINES LINES = %lu, SCORE_DELTA = %lu, SCORE = %lu", game->current_level.num, lines_cleared, score_delta, game->score);
+    }
 }
 
-// TOOD: Add levels later on
 void handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
     // TODO: Implement loss condition
     double *simulated_time = &game->active_tetromino.simulated_time;
@@ -312,7 +394,7 @@ void handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
         }
     }
 
-    while (time > *simulated_time + TETRO_DROP_SECS_PER_ROW) {
+    while (time > *simulated_time + game->current_level.gravity) {
         game->should_rerender = true;
 
         if (check_collision(game, at->x, at->y, &at->tetromino, DIR_DOWN)) {
@@ -324,7 +406,7 @@ void handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
 
         game->active_tetromino.y += 1;
         DEBUG_PRINTF("TETRO Y = %hu", game->active_tetromino.y);
-        *simulated_time += TETRO_DROP_SECS_PER_ROW;        
+        *simulated_time += game->current_level.gravity;        
     }
 
     if (is_key_tapped(window, game, KEY_UP)) {
@@ -345,6 +427,7 @@ void handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
         } else {
             at->y += 1;
             *simulated_time = time;
+            game->score += 1;
         }
 
         down_repeats -= 1;
