@@ -13,13 +13,10 @@ typedef struct UIBoard {
     float gy;
 } UIBoard;
 
-typedef struct VertexData {
+typedef struct VertexMeta {
     uint32_t vertices_count;
-    float *vertex_data;
-
     uint32_t elements_count;
-    uint32_t *elements_data;
-} VertexData;
+} VertexMeta;
 
 typedef struct App {
     uint32_t viewport_width;
@@ -34,8 +31,8 @@ typedef struct App {
 
 void update_board_dimensions(App *app);
 
-VertexData generate_ui_board_vertex_data(App *app);
-VertexData generate_pieces_vertex_data(App *app);
+VertexMeta ui_generate_and_copy_board_vertex_buffer_data(App *app, int32_t vao, int32_t vbo, int32_t ebo);
+VertexMeta ui_generate_and_copy_pieces_vertex_buffer_data(App *app, int32_t vao, int32_t vbo, int32_t ebo);
 void calculateFPS(App *app);
 
 #endif

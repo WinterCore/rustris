@@ -54,8 +54,6 @@ Game create_game(uint8_t cols, uint8_t rows) {
 
 
 TetrominoType get_next_tetromino() {
-    return TETRO_O;
-
     static TetrominoType types[] = {
         TETRO_I,
         TETRO_J,
