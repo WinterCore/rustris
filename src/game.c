@@ -42,7 +42,7 @@ Game create_game(uint8_t cols, uint8_t rows) {
         .board = board,
         .should_rerender = true,
         .input_tap_state = {0},
-        .input_repeat_state = {0},
+        .input_repeat_state = {{0}},
         .current_level = create_level(1),
     };
 
@@ -54,8 +54,6 @@ Game create_game(uint8_t cols, uint8_t rows) {
 
 
 TetrominoType get_next_tetromino() {
-    return TETRO_O;
-
     static TetrominoType types[] = {
         TETRO_I,
         TETRO_J,

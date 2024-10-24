@@ -1,5 +1,5 @@
 #include "game.h"
-#include <GLFW/glfw3.h>
+#include <glad/glad.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -14,23 +14,42 @@ TetrominoGeometry getTetrominoGeometry(TetrominoType type) {
 }
 */
 
+#define BOARD_Y_PADDING 0.05 // percent
+#define BOARD_X_PADDING 0.10
+
 void update_board_dimensions(App *app) {
     float real_width = app->viewport_width;
     float real_height = app->viewport_height;
 
-    float square_height = real_height / (float) app->game.rows;
-    float square_width = real_width / (float) app->game.cols;
+    float cols = (float) app->game.cols;
+    float rows = (float) app->game.rows;
+
+
+    float padding_y = (float) BOARD_Y_PADDING * real_height;
+    float padding_x = (float) BOARD_X_PADDING * real_width;
+    
+    /**
+     * TODO: Account for the score and next pieces areas (make sure there's enough space for them)
+     * Use the width as the base for the square width if the window width is smaller than it's height
+     */
+    float ui_board_height = real_height - (padding_y * 2);
+    float ui_board_width = ui_board_height * (cols / rows);
+
+    float square_height = ui_board_height / rows;
+    float square_width = ui_board_width / cols;
 
     float gx = remap(
         0.0f, real_width,
         -1.0f, 1.0f,
-        0
+        // Center
+        (real_width - ui_board_width) / 2
     );
 
     float gy = remap(
         0.0f, real_height,
         -1.0f, 1.0f,
-        0
+        // Center
+        (real_height - ui_board_height) / 2
     );
 
     float square_gwidth = remap(
@@ -45,13 +64,15 @@ void update_board_dimensions(App *app) {
         square_height
     );
 
+    DEBUG_PRINTF("gx = %f, gy = %f, gwidth = %f, gheight = %f", gx, gy, square_gwidth, square_gheight);
+
     app->ui_board.gx = gx;
     app->ui_board.gy = gy;
     app->ui_board.square_gwidth = square_gwidth;
     app->ui_board.square_gheight = square_gheight;
 }
 
-VertexData generate_ui_board_vertex_data(App *app) {
+VertexMeta ui_generate_and_copy_board_vertex_buffer_data(App *app, int32_t vao, int32_t vbo, int32_t ebo) {
     uint32_t rows = app->game.rows;
     uint32_t cols = app->game.cols;
 
@@ -63,22 +84,20 @@ VertexData generate_ui_board_vertex_data(App *app) {
     uint32_t vertex_count = (rows + 1) * (cols + 1);
 
 
-    // TODO: Remember to deallloc when done 
     uint32_t vertices_count = vertex_count * 3; // x, y, color_idx
-    float *vertex_data = malloc(vertices_count * sizeof(float));
+    float *vertices = malloc(vertices_count * sizeof(float));
 
-    // TODO: Remember to deallloc when done 
     uint32_t elements_count = rows * cols * 2 * 3; // 2 triangles per square
-    uint32_t *elements_data = malloc(elements_count * sizeof(uint32_t));
+    uint32_t *elements = malloc(elements_count * sizeof(uint32_t));
 
 
     for (uint32_t i = 0, si = 0; i < vertices_count; i += 3, si += 1) {
         uint32_t row = si / (cols + 1);
         uint32_t col = si % (cols + 1);
 
-        vertex_data[i + 0] = gx + (square_gwidth * col);
-        vertex_data[i + 1] = gy + (square_gheight * row);
-        vertex_data[i + 2] = TETRO_EMPTY; 
+        vertices[i + 0] = gx + (square_gwidth * col);
+        vertices[i + 1] = gy + (square_gheight * row);
+        vertices[i + 2] = TETRO_EMPTY; 
     }
 
     for (uint32_t i = 0, si = 0; i < elements_count; i += 6, si += 1) {
@@ -92,27 +111,38 @@ VertexData generate_ui_board_vertex_data(App *app) {
         
 
         // Top left triangle
-        elements_data[i + 0] = a;
-        elements_data[i + 1] = b;
-        elements_data[i + 2] = c;
+        elements[i + 0] = a;
+        elements[i + 1] = b;
+        elements[i + 2] = c;
 
         // Bottom right triangle
-        elements_data[i + 3] = b;
-        elements_data[i + 4] = c;
-        elements_data[i + 5] = d;
+        elements[i + 3] = b;
+        elements[i + 4] = c;
+        elements[i + 5] = d;
     }
 
-    VertexData ui_board_vertex_data = {
+    VertexMeta ui_board_vertex_meta = {
         .vertices_count = vertices_count,
-        .vertex_data = vertex_data,
-        .elements_data = elements_data,
         .elements_count = elements_count,
     };
 
-    return ui_board_vertex_data;
+    glBindVertexArray(vao);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, ui_board_vertex_meta.vertices_count * sizeof(float), vertices, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, ui_board_vertex_meta.elements_count * sizeof(uint32_t), elements, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    free(vertices);
+    free(elements);
+
+    return ui_board_vertex_meta;
 }
 
-VertexData generate_pieces_vertex_data(App *app) {
+VertexMeta ui_generate_and_copy_pieces_vertex_buffer_data(App *app, int32_t vao, int32_t vbo, int32_t ebo) {
     size_t vertices_count = 0;
     size_t elements_count = 0;
 
@@ -248,14 +278,35 @@ VertexData generate_pieces_vertex_data(App *app) {
     }
 
 
-    VertexData vertex_data = {
+    VertexMeta vertex_meta = {
         .vertices_count = vertices_count,
-        .vertex_data = vertices,
-        .elements_data = elements,
         .elements_count = elements_count,
     };
 
-    return vertex_data;
+    glBindVertexArray(vao);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(
+        GL_ARRAY_BUFFER,
+        vertices_count * sizeof(float),
+        vertices,
+        GL_STATIC_DRAW
+    );
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBufferData(
+        GL_ELEMENT_ARRAY_BUFFER,
+        elements_count * sizeof(uint32_t),
+        elements,
+        GL_STATIC_DRAW
+    );
+    
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    free(vertices);
+    free(elements);
+
+    return vertex_meta;
 }
 
 float previousTime = 0.0;

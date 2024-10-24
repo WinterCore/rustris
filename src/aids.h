@@ -23,6 +23,11 @@
     fprintf(stderr, "UNIMPLEMENTED"); \
     exit(EXIT_FAILURE); \
 
+#define PANIC(...) \
+    fprintf(stderr, __VA_ARGS__); \
+    fflush(stderr); \
+    exit(EXIT_FAILURE);
+
 #define UNREACHABLE \
     fprintf(stderr, "UNREACHABLE"); \
     exit(EXIT_FAILURE); \

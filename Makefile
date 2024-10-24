@@ -1,5 +1,5 @@
 OS := $(shell uname)
-CFLAGS = -std=c11 -Wall -Wextra
+CFLAGS = -DGLFW_INCLUDE_NONE -std=c11 -Wall -Wextra
 LDFLAGS = -Iinclude
 
 ifeq ($(OS),Darwin)
