@@ -3,7 +3,6 @@
 
 #include <GLFW/glfw3.h>
 #include <stdint.h>
-#include <stdbool.h>
 
 #define TETRO_DROP_SECS_PER_ROW 1
 
@@ -75,8 +74,26 @@ typedef enum GameKey {
     KEY_LEFT,
 } GameKey;
 
+/**
+ * Holds the per-key state used by get_held_key_repeats() to implement
+ * DAS (Delayed Auto Shift): an initial delay before repeats begin, followed
+ * by repeats firing at a fixed rate for as long as the key is held.
+ */
 typedef struct InputRepeatState {
+    /**
+     * Timestamp (in seconds, from glfwGetTime()) used as a moving cursor to
+     * count elapsed intervals. Set to the current time when the key is first
+     * pressed, then advanced by each delay/repeat interval as they are
+     * consumed. Reset to 0 on key release.
+     */
     double simulated_time;
+
+    /**
+     * Whether the initial delay (KEY_REPEAT_INITIAL_DELAY_MS) has already
+     * elapsed for the current key press. False while waiting out the initial
+     * delay, true once it has passed and repeat firing has begun.
+     * Reset to false on key release.
+     */
     bool finished_initial_delay;
 } InputRepeatState;
 
@@ -106,7 +123,20 @@ typedef struct Game {
 
     bool should_rerender;
 
-    bool input_tap_state[4];
+    /**
+     * Tracks whether each GameKey is currently held down, indexed by GameKey.
+     * Used by is_key_tapped() to fire exactly once per key press — set to true
+     * on the first frame a key is detected as pressed, and cleared on release.
+     * Prevents a held key from registering as multiple taps.
+     */
+    bool input_hold_state[4];
+
+    /**
+     * Tracks the custom key-repeat state for each GameKey, indexed by GameKey.
+     * Used by get_held_key_repeats() to implement DAS (Delayed Auto Shift):
+     * after an initial delay of KEY_REPEAT_INITIAL_DELAY_MS, the key fires
+     * repeats at KEY_REPEAT_RATE per second. Reset when the key is released.
+     */
     InputRepeatState input_repeat_state[4];
 } Game;
 

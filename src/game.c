@@ -41,7 +41,7 @@ Game create_game(uint8_t cols, uint8_t rows) {
         .rows = rows,
         .board = board,
         .should_rerender = true,
-        .input_tap_state = {0},
+        .input_hold_state = {0},
         .input_repeat_state = {0},
         .current_level = create_level(1),
     };
@@ -332,7 +332,7 @@ uint64_t get_cleared_lines_score(Game *game, uint64_t num_lines) {
             return 300 * game->current_level.num;
         case 3:
             return 500 * game->current_level.num;
-        case 5:
+        case 4:
             return 800 * game->current_level.num;
     }
     
@@ -368,7 +368,7 @@ void settle_active_tetromino_on_board(Game *game) {
             game->current_level = create_level(game->current_level.num + 1);
         }
 
-        DEBUG_PRINTF("LEVEL = %hu, CLEARED LINES LINES = %lu, SCORE_DELTA = %lu, SCORE = %lu", game->current_level.num, lines_cleared, score_delta, game->score);
+        DEBUG_PRINTF("LEVEL = %hu, CLEARED LINES LINES = %llu, SCORE_DELTA = %llu, SCORE = %llu", game->current_level.num, lines_cleared, score_delta, game->score);
     }
 }
 
@@ -489,14 +489,14 @@ bool is_key_tapped(GLFWwindow *window, Game *game, GameKey key) {
     int key_state = glfwGetKey(window, glfw_key);
     
     if (key_state == GLFW_PRESS) {
-        if (! game->input_tap_state[key]) {
-            game->input_tap_state[key] = true;
+        if (! game->input_hold_state[key]) {
+            game->input_hold_state[key] = true;
             return true;
         }
         
         return false;
     } else if (key_state == GLFW_RELEASE) {
-        game->input_tap_state[key] = false;
+        game->input_hold_state[key] = false;
 
         return false;
     } else {

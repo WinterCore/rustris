@@ -13,10 +13,23 @@ This project was supposed to be written in Rust but I changed my mind because ap
 
 ### TODO
 
-- Implement the basic game
-- Improve the UI
-- Add a better RNG
-- Add multiplayer
+- [ ] Implement game over condition (board collision at spawn)
+- [ ] Implement counterclockwise rotation
+- [ ] Implement hard drop (instant drop on key press)
+- [ ] Implement lock delay (brief window to move/rotate before a piece locks)
+- [ ] Implement 7-bag randomizer (cycle shuffled sets of all 7 pieces instead of pure random)
+- [ ] Add ghost piece (shows where the active piece will land)
+- [ ] Implement pause
+- [ ] UI
+  - [ ] Implement text rendering (bitmap font or freetype)
+  - [ ] Constrain board to center of screen, leaving room for side panels
+  - [ ] Left panel: score, level, lines cleared
+  - [ ] Right panel: next piece preview
+  - [ ] Game over screen with final score and restart prompt
+  - [ ] Main menu screen
+- [ ] Add sound effects (piece lock, line clear, level up)
+- [ ] Implement hold piece
+- [ ] Add multiplayer
 
 
 ### References

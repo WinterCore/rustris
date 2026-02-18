@@ -1,5 +1,5 @@
 OS := $(shell uname)
-CFLAGS = -std=c11 -Wall -Wextra
+CFLAGS = -std=c2x -Wall -Wextra -Iinclude
 LDFLAGS = -Iinclude
 
 ifeq ($(OS),Darwin)
@@ -24,16 +24,16 @@ executable: Rustris
 	./Rustris
 
 src/aids.o: src/aids.c src/aids.h
-	cc $(CFLAGS) -c -o src/aids.o src/aids.c $(LDFLAGS)
+	cc $(CFLAGS) -c -o src/aids.o src/aids.c
 
 src/glad.o: src/glad.c
-	cc $(CFLAGS) -c -o src/glad.o src/glad.c $(LDFLAGS)
+	cc $(CFLAGS) -c -o src/glad.o src/glad.c
 
 src/draw.o: src/draw.c src/draw.h src/game.o src/aids.o
-	cc $(CFLAGS) -c -o src/draw.o src/draw.c $(LDFLAGS)
+	cc $(CFLAGS) -c -o src/draw.o src/draw.c
 
 src/game.o: src/game.c src/game.h
-	cc $(CFLAGS) -c -o src/game.o src/game.c $(LDFLAGS)
+	cc $(CFLAGS) -c -o src/game.o src/game.c
 
 clean:
 	rm -rf Rustris ./src/*.o
