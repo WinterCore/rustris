@@ -236,11 +236,6 @@ int main() {
         GL_STATIC_DRAW
     );
 
-    for (size_t i = 0; i < pieces_vertex_data.vertices_count; i += 3) {
-        DEBUG_PRINTF("(%f, %f), c = %f", pieces_vertex_data.vertex_data[i + 0], pieces_vertex_data.vertex_data[i + 1], pieces_vertex_data.vertex_data[i + 2]);
-
-    }
-
     glVertexAttribPointer(
         0,
         2,
@@ -268,7 +263,7 @@ int main() {
 
     glUseProgram(shader_program);
     // Wireframe mode
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     while (! glfwWindowShouldClose(window)) {
         // Handle inputs
@@ -276,8 +271,12 @@ int main() {
         glfwPollEvents();
 
         calculateFPS(&app);
-        handle_tetromino_horizontal_movement(window, &app.game);
-        handle_tetromino_vertical_movement(window, &app.game);
+
+        if (app.game.state == GAME_PLAYING) {
+            handle_tetromino_horizontal_movement(window, &app.game);
+            handle_tetromino_vertical_movement(window, &app.game);
+            handle_tetromino_rotation(window, &app.game);
+        }
 
         // Rendering
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);

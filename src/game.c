@@ -1,5 +1,6 @@
 #include <GLFW/glfw3.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,6 +12,177 @@
 
 #include "./game.h"
 #include "./aids.h"
+
+Tetromino TETROMINOS[7] = {
+    {
+        .type = TETRO_I,
+        .squares = {
+            0, 0, 0, 0,
+            1, 1, 1, 1,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+        },
+        .origin = { .x = 2, .y = -2 },
+    },
+    {
+        .type = TETRO_J,
+        .squares = {
+            1, 0, 0, 0,
+            1, 1, 1, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+        },
+        .origin = { .x = 1.5, .y = -1.5 },
+    },
+    {
+        .type = TETRO_L,
+        .squares = {
+            0, 0, 1, 0,
+            1, 1, 1, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+        },
+        .origin = { .x = 1.5, .y = -1.5 },
+    },
+    {
+        .type = TETRO_O,
+        .squares = {
+            0, 1, 1, 0,
+            0, 1, 1, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+        },
+        .origin = { .x = 2, .y = -1 },
+    },
+    {
+        .type = TETRO_S,
+        .squares = {
+            0, 1, 1, 0,
+            1, 1, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+        },
+        .origin = { .x = 1.5, .y = -1.5 },
+    },
+    {
+        .type = TETRO_T,
+        .squares = {
+            0, 1, 0, 0,
+            1, 1, 1, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+        },
+        .origin = { .x = 1.5, .y = -1.5 },
+    },
+    {
+        .type = TETRO_Z,
+        .squares = {
+            1, 1, 0, 0,
+            0, 1, 1, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+        },
+        .origin = { .x = 1.5, .y = -1.5 },
+    },
+};
+
+/**
+ * Wall kick data for the pieces: J, L, T, S, Z
+ */
+WallkickData *TETROMINO_WALLKICK_DATA_GENERIC[8] = {
+    &(WallkickData) {
+        .rotation_from = TETRO_R_000,
+        .rotation_to = TETRO_R_090,
+        .tests = {{0, 0}, {-1, 0}, {-1, -1}, {0, 2}, {-1, 2}},
+    },
+    &(WallkickData) {
+        .rotation_from = TETRO_R_090,
+        .rotation_to = TETRO_R_000,
+        .tests = {{0, 0}, {1, 0}, {1, 1}, {0, -2}, {1, -2}},
+    },
+
+    &(WallkickData) {
+        .rotation_from = TETRO_R_090,
+        .rotation_to = TETRO_R_180,
+        .tests = {{0, 0}, {1, 0}, {1, 1}, {0, -2}, {1, -2}},
+    },
+    &(WallkickData) {
+        .rotation_from = TETRO_R_180,
+        .rotation_to = TETRO_R_090,
+        .tests = {{0, 0}, {-1, 0}, {-1, -1}, {0, 2}, {-1, 2}},
+    },
+
+    &(WallkickData) {
+        .rotation_from = TETRO_R_180,
+        .rotation_to = TETRO_R_270,
+        .tests = {{0, 0}, {1, 0}, {1, -1}, {0, 2}, {1, 2}},
+    },
+    &(WallkickData) {
+        .rotation_from = TETRO_R_270,
+        .rotation_to = TETRO_R_180,
+        .tests = {{0, 0}, {-1, 0}, {-1, 1}, {0, -2}, {-1, -2}},
+    },
+
+    &(WallkickData) {
+        .rotation_from = TETRO_R_270,
+        .rotation_to = TETRO_R_000,
+        .tests = {{0, 0}, {-1, 0}, {-1, 1}, {0, -2}, {-1, -2}},
+    },
+    &(WallkickData) {
+        .rotation_from = TETRO_R_000,
+        .rotation_to = TETRO_R_270,
+        .tests = {{0, 0}, {1, 0}, {1, -1}, {0, 2}, {1, 2}},
+    },
+};
+
+/**
+ * Wall kick data for the I piece
+ */
+WallkickData *TETROMINO_WALLKICK_DATA_I_PIECE[8] = {
+    &(WallkickData) {
+        .rotation_from = TETRO_R_000,
+        .rotation_to = TETRO_R_090,
+        .tests = {{0, 0}, {-2, 0}, {1, 0}, {-2, 1}, {1, -2}},
+    },
+    &(WallkickData) {
+        .rotation_from = TETRO_R_090,
+        .rotation_to = TETRO_R_000,
+        .tests = {{0, 0}, {2, 0}, {-1, 0}, {2, -1}, {-1, 2}},
+    },
+
+    &(WallkickData) {
+        .rotation_from = TETRO_R_090,
+        .rotation_to = TETRO_R_180,
+        .tests = {{0, 0}, {-1, 0}, {2, 0}, {-1, -2}, {2, 1}},
+    },
+    &(WallkickData) {
+        .rotation_from = TETRO_R_180,
+        .rotation_to = TETRO_R_090,
+        .tests = {{0, 0}, {1, 0}, {-2, 0}, {1, 2}, {-2, -1}},
+    },
+
+    &(WallkickData) {
+        .rotation_from = TETRO_R_180,
+        .rotation_to = TETRO_R_270,
+        .tests = {{0, 0}, {2, 0}, {-1, 0}, {2, -1}, {-1, 2}},
+    },
+    &(WallkickData) {
+        .rotation_from = TETRO_R_270,
+        .rotation_to = TETRO_R_180,
+        .tests = {{0, 0}, {-2, 0}, {1, 0}, {-2, 1}, {1, -2}},
+    },
+
+    &(WallkickData) {
+        .rotation_from = TETRO_R_270,
+        .rotation_to = TETRO_R_000,
+        .tests = {{0, 0}, {1, 0}, {-2, 0}, {1, 2}, {-2, -1}},
+    },
+    &(WallkickData) {
+        .rotation_from = TETRO_R_000,
+        .rotation_to = TETRO_R_270,
+        .tests = {{0, 0}, {-1, 0}, {2, 0}, {-1, -2}, {2, 1}},
+    },
+};
 
 Level create_level(uint8_t level) {
     assert("Level must be > 0" && level > 0);
@@ -42,7 +214,7 @@ Game create_game(uint8_t cols, uint8_t rows) {
         .board = board,
         .should_rerender = true,
         .input_hold_state = {0},
-        .input_repeat_state = {0},
+        .input_repeat_state = {{ 0 }},
         .current_level = create_level(1),
     };
 
@@ -54,8 +226,6 @@ Game create_game(uint8_t cols, uint8_t rows) {
 
 
 TetrominoType get_next_tetromino() {
-    return TETRO_O;
-
     static TetrominoType types[] = {
         TETRO_I,
         TETRO_J,
@@ -135,6 +305,16 @@ Tetromino rotate_tetromino(Tetromino *tetromino, bool clockwise) {
 
 
     return rotated_tetro;
+}
+
+void move_tetromino_down(Game *game) {
+    game->active_tetromino.y += 1;
+    game->active_tetromino.simulated_time = glfwGetTime();
+}
+
+void apply_gravity_tick(Game *game) {
+    game->active_tetromino.y += 1;
+    game->active_tetromino.simulated_time += game->current_level.gravity;
 }
 
 void drop_new_tetromino(Game *game, TetrominoType tetro_type) {
@@ -368,69 +548,86 @@ void settle_active_tetromino_on_board(Game *game) {
             game->current_level = create_level(game->current_level.num + 1);
         }
 
-        DEBUG_PRINTF("LEVEL = %hu, CLEARED LINES LINES = %llu, SCORE_DELTA = %llu, SCORE = %llu", game->current_level.num, lines_cleared, score_delta, game->score);
+        DEBUG_PRINTF("LEVEL = %hu, CLEARED LINES LINES = %" PRIu64 ", SCORE_DELTA = %" PRIu64 ", SCORE = %" PRIu64, game->current_level.num, lines_cleared, score_delta, game->score);
     }
 }
 
-void handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
-    // TODO: Implement loss condition
-    double *simulated_time = &game->active_tetromino.simulated_time;
-
-    double time = glfwGetTime();
-
+void check_game_over(Game *game) {
     ActiveTetromino *at = &game->active_tetromino;
 
+    if (check_collision(game, at->x, at->y, &at->tetromino, DIR_DOWN) && at->y <= 0) {
+        game->state = GAME_OVER;
+        DEBUG_PRINT("GAME OVER");
+    }
+}
+
+void lock_and_spawn_next(Game *game) {
+    settle_active_tetromino_on_board(game);
+    drop_new_tetromino(game, get_next_tetromino());
+    check_game_over(game);
+}
+
+void handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
+    double time = glfwGetTime();
+    ActiveTetromino *at = &game->active_tetromino;
+
+    /**
+     * Moving a piece down is done in 3 ways:
+     * 1. Tap: When the player taps the down key, the piece should move down by 1 cell immediately
+     * 2. Gravity: The piece should move down by 1 cell every time the gravity delay has passed
+     * 3. Repeats: When the player holds the down key, the piece should move down by 1 cell every time the repeat delay has passed after the initial delay
+     */
+
+    // Tap
     if (is_key_tapped(window, game, KEY_DOWN)) {
         game->should_rerender = true;
 
         if (check_collision(game, at->x, at->y, &game->active_tetromino.tetromino, DIR_DOWN)) {
-            settle_active_tetromino_on_board(game);
-            drop_new_tetromino(game, get_next_tetromino());
+            lock_and_spawn_next(game);
 
             return;
         } else {
-            at->y += 1;
-            *simulated_time = time;
+            move_tetromino_down(game);
         }
     }
 
-    while (time > *simulated_time + game->current_level.gravity) {
+    // Gravity
+    while (time > at->simulated_time + game->current_level.gravity) {
         game->should_rerender = true;
 
         if (check_collision(game, at->x, at->y, &at->tetromino, DIR_DOWN)) {
-            settle_active_tetromino_on_board(game);
-            drop_new_tetromino(game, get_next_tetromino());
+            lock_and_spawn_next(game);
 
             break;
         }
 
-        game->active_tetromino.y += 1;
+        apply_gravity_tick(game);
         DEBUG_PRINTF("TETRO Y = %hu", game->active_tetromino.y);
-        *simulated_time += game->current_level.gravity;        
     }
 
-    if (is_key_tapped(window, game, KEY_UP)) {
-        game->active_tetromino = try_rotate_tetromino(game, &game->active_tetromino, TETRO_R_090);
-        game->should_rerender = true;
-    }
-
+    // Down key repeats
     uint32_t down_repeats = get_held_key_repeats(window, game, KEY_DOWN);
 
     while (down_repeats > 0) {
         game->should_rerender = true;
 
         if (check_collision(game, at->x, at->y, &game->active_tetromino.tetromino, DIR_DOWN)) {
-            settle_active_tetromino_on_board(game);
-            drop_new_tetromino(game, get_next_tetromino());
+            lock_and_spawn_next(game);
 
             return;
         } else {
-            at->y += 1;
-            *simulated_time = time;
+            move_tetromino_down(game);
             game->score += 1;
         }
 
         down_repeats -= 1;
+    }
+}
+
+void handle_tetromino_rotation(GLFWwindow *window, Game *game) {
+    if (is_key_tapped(window, game, KEY_UP)) {
+        game->active_tetromino = try_rotate_tetromino(game, &game->active_tetromino, TETRO_R_090);
+        game->should_rerender = true;
     }
 }
 
