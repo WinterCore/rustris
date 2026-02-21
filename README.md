@@ -13,11 +13,12 @@ This project was supposed to be written in Rust but I changed my mind because ap
 
 ### TODO
 
-- [ ] Implement game over condition (board collision at spawn)
+- [X] Implement game over condition (board collision at spawn)
+- [X] Refactor rendering code
+- [ ] Implement 7-bag randomizer (cycle shuffled sets of all 7 pieces instead of pure random)
 - [ ] Implement counterclockwise rotation
 - [ ] Implement hard drop (instant drop on key press)
 - [ ] Implement lock delay (brief window to move/rotate before a piece locks)
-- [ ] Implement 7-bag randomizer (cycle shuffled sets of all 7 pieces instead of pure random)
 - [ ] Add ghost piece (shows where the active piece will land)
 - [ ] Implement pause
 - [ ] UI
@@ -29,11 +30,13 @@ This project was supposed to be written in Rust but I changed my mind because ap
   - [ ] Main menu screen
 - [ ] Add sound effects (piece lock, line clear, level up)
 - [ ] Implement hold piece
+- [ ] Style improvements
+  - [ ] Add borders to pieces
+  - [ ] Add simple animations (line clear flash, piece spawn animation)
 - [ ] Add multiplayer
 
 
 ### References
 - [https://learnopengl.com/Getting-started/Hello-Triangle](https://learnopengl.com/Getting-started/Hello-Triangle)
-- [https://tetris.fandom.com/wiki/SRS](https://tetris.fandom.com/wiki/SRS)
 
 `bear -- make` to generate `compile_commands.json` for `coc-clangd`

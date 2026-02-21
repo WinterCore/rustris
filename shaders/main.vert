@@ -5,6 +5,8 @@ layout (location = 1) in float vertColorIndex;
 
 layout (location = 0) out vec4 color;
 
+uniform vec2 screenSize;
+
 
 vec4 COLORS[7] = vec4[7](
     vec4(0.191f, 0.777f, 0.933f, 1.0f), // I
@@ -17,7 +19,9 @@ vec4 COLORS[7] = vec4[7](
 );
 
 void main() {
-    gl_Position = vec4(pos.x, pos.y, 0.0, 1.0);
+    vec2 ndc = (pos / screenSize) * 2.0 - 1.0;
+    // ndc.y = -ndc.y;
+    gl_Position = vec4(ndc, 0.0, 1.0);
     
 
     if (int(vertColorIndex) < 7) {
