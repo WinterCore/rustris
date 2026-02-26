@@ -595,10 +595,23 @@ void handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
 
     /**
      * Moving a piece down is done in 3 ways:
-     * 1. Tap: When the player taps the down key, the piece should move down by 1 cell immediately
-     * 2. Gravity: The piece should move down by 1 cell every time the gravity delay has passed
+     * 1. Hard drop: When the player taps the space key, the piece should hard drop immediately
+     * 2. Tap: When the player taps the down key, the piece should move down by 1 cell immediately
      * 3. Repeats: When the player holds the down key, the piece should move down by 1 cell every time the repeat delay has passed after the initial delay
+     * 4. Gravity: The piece should move down by 1 cell every time the gravity delay has passed
      */
+
+    // Hard drop
+    if (is_key_tapped(window, game, KEY_SPACE)) {
+        while (! check_collision(game, at->x, at->y, &at->tetromino, DIR_DOWN)) {
+            move_tetromino_down(game);
+            game->score += 2;
+        }
+
+        game->should_rerender = true;
+        lock_and_spawn_next(game);
+        return;
+    }
 
     // Tap
     if (is_key_tapped(window, game, KEY_DOWN)) {
@@ -610,6 +623,34 @@ void handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
             return;
         } else {
             move_tetromino_down(game);
+            game->score += 1;
+        }
+
+        return;
+    }
+
+    // Down key repeats
+    {
+        uint32_t down_repeats = get_held_key_repeats(window, game, KEY_DOWN);
+
+        size_t i = 0;
+        while (i < down_repeats) {
+            game->should_rerender = true;
+
+            if (check_collision(game, at->x, at->y, &at->tetromino, DIR_DOWN)) {
+                lock_and_spawn_next(game);
+
+                return;
+            } else {
+                move_tetromino_down(game);
+                game->score += 1;
+            }
+
+            i += 1;
+        }
+
+        if (down_repeats > 0) {
+            return;
         }
     }
 
@@ -620,29 +661,10 @@ void handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
         if (check_collision(game, at->x, at->y, &at->tetromino, DIR_DOWN)) {
             lock_and_spawn_next(game);
 
-            break;
+            return;
         }
 
         apply_gravity_tick(game);
-        // DEBUG_PRINTF("TETRO Y = %hu", game->active_tetromino.y);
-    }
-
-    // Down key repeats
-    uint32_t down_repeats = get_held_key_repeats(window, game, KEY_DOWN);
-
-    while (down_repeats > 0) {
-        game->should_rerender = true;
-
-        if (check_collision(game, at->x, at->y, &game->active_tetromino.tetromino, DIR_DOWN)) {
-            lock_and_spawn_next(game);
-
-            return;
-        } else {
-            move_tetromino_down(game);
-            game->score += 1;
-        }
-
-        down_repeats -= 1;
     }
 }
 
