@@ -318,7 +318,7 @@ void generate_ui_board_vertex_data(Renderer *renderer, Game *game, UIBoard *ui_b
     float *vertex_data = renderer->ui_board_vertex_data.vertex_data;
     uint32_t *elements_data = renderer->ui_board_vertex_data.elements_data;
 
-    DEBUG_PRINTF("Generating UI board x=%.2f, y=%.2f, square_width=%.2f, square_height=%.2f", board_x, board_y, square_width, square_height);
+    // DEBUG_PRINTF("Generating UI board x=%.2f, y=%.2f, square_width=%.2f, square_height=%.2f", board_x, board_y, square_width, square_height);
 
     for (uint32_t i = 0, si = 0; i < vertices_count; i += 3, si += 1) {
         uint32_t row = si / (cols + 1);

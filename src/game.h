@@ -121,6 +121,15 @@ typedef enum GameState {
     GAME_OVER,
 } GameState;
 
+/**
+ * Implements the "7-bag" randomizer: pieces are shuffled in groups of 7,
+ * guaranteeing that the player will get one of each piece every 7 pieces.
+ */
+typedef struct NextPieceBag {
+    TetrominoType pieces[7];
+    uint8_t next_piece_index;
+} NextPieceBag;
+
 typedef struct Game {
     uint8_t cols;
     uint8_t rows;
@@ -137,6 +146,8 @@ typedef struct Game {
     ActiveTetromino active_tetromino;
 
     bool should_rerender;
+
+    NextPieceBag next_piece_bag;
 
     /**
      * Tracks whether each GameKey is currently held down, indexed by GameKey.
@@ -163,7 +174,8 @@ bool is_key_tapped(GLFWwindow *window, Game *game, GameKey key);
 uint32_t get_held_key_repeats(GLFWwindow *window, Game *game, GameKey key);
 
 Game create_game(uint8_t cols, uint8_t rows);
-TetrominoType get_next_tetromino();
+TetrominoType next_tetromino_consume(Game *game);
+TetrominoType next_tetromino_peek(Game *game);
 
 Tetromino rotate_tetromino(Tetromino *tetromino, bool clockwise);
 void drop_new_tetromino(Game *game, TetrominoType tetro_type);

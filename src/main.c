@@ -54,7 +54,8 @@ int main() {
 
     int initial_width, initial_height;
 
-    glfwGetWindowSize(window, &initial_width, &initial_height);
+    glfwGetFramebufferSize(window, &initial_width, &initial_height);
+    DEBUG_PRINTF("Initial window size width=%u, height=%u", initial_width, initial_height);
 
     Game game = create_game(10, 20);
     UIBoard ui_board = {0};
@@ -66,13 +67,14 @@ int main() {
         .renderer = NULL,
         .ui_board = &ui_board,
     };
-    update_board_dimensions(&app);
 
     glfwSetWindowUserPointer(window, &app);
     glfwSetWindowPos(window, 900, 100);
     glfwMakeContextCurrent(window);
 
     glfwSetFramebufferSizeCallback(window, &framebuffer_size_callback);
+
+    update_board_dimensions(&app);
 
     if (! gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
         fprintf(stderr, "Failed to initialize GLAD\n");

@@ -197,6 +197,44 @@ Level create_level(uint8_t level) {
     };
 }
 
+static void refill_next_tetromino_bag(NextPieceBag *bag) {
+    TetrominoType tetrominos[7] = {
+        TETRO_I,
+        TETRO_J,
+        TETRO_L,
+        TETRO_O,
+        TETRO_S,
+        TETRO_T,
+        TETRO_Z,
+    };
+
+    size_t len = sizeof(tetrominos) / sizeof(tetrominos[0]);
+
+    for (size_t i = 0; i < len; i += 1) {
+        size_t j = i + rand() / (RAND_MAX / (len - i) + 1);
+
+        TetrominoType temp = tetrominos[i];
+        tetrominos[i] = tetrominos[j];
+        tetrominos[j] = temp;
+    }
+
+    memcpy(bag->pieces, tetrominos, sizeof(tetrominos));
+    bag->next_piece_index = 0;
+}
+
+TetrominoType next_tetromino_peek(Game *game) {
+    return game->next_piece_bag.pieces[game->next_piece_bag.next_piece_index];
+}
+
+TetrominoType next_tetromino_consume(Game *game) {
+    TetrominoType tetromino = game->next_piece_bag.pieces[game->next_piece_bag.next_piece_index];
+    game->next_piece_bag.next_piece_index += 1;
+    if (game->next_piece_bag.next_piece_index >= 7) {
+        refill_next_tetromino_bag(&game->next_piece_bag);
+    }
+    return tetromino;
+}
+
 Game create_game(uint8_t cols, uint8_t rows) {
     uint32_t area = cols * rows;
     TetrominoType *board = malloc(sizeof(TetrominoType) * area);
@@ -218,27 +256,10 @@ Game create_game(uint8_t cols, uint8_t rows) {
         .current_level = create_level(1),
     };
 
-    drop_new_tetromino(&game, get_next_tetromino());
+    refill_next_tetromino_bag(&game.next_piece_bag);
+    drop_new_tetromino(&game, next_tetromino_consume(&game));
 
     return game;
-}
-
-
-
-TetrominoType get_next_tetromino() {
-    static TetrominoType types[] = {
-        TETRO_I,
-        TETRO_J,
-        TETRO_L,
-        TETRO_O,
-        TETRO_S,
-        TETRO_T,
-        TETRO_Z,
-    };
-
-    size_t len = sizeof(types) / sizeof(types[0]);
-
-    return types[rand() % len];
 }
 
 float degrees_to_radians(float degrees) {
@@ -548,7 +569,7 @@ void settle_active_tetromino_on_board(Game *game) {
             game->current_level = create_level(game->current_level.num + 1);
         }
 
-        DEBUG_PRINTF("LEVEL = %hu, CLEARED LINES LINES = %" PRIu64 ", SCORE_DELTA = %" PRIu64 ", SCORE = %" PRIu64, game->current_level.num, lines_cleared, score_delta, game->score);
+        // DEBUG_PRINTF("LEVEL = %hu, CLEARED LINES LINES = %" PRIu64 ", SCORE_DELTA = %" PRIu64 ", SCORE = %" PRIu64, game->current_level.num, lines_cleared, score_delta, game->score);
     }
 }
 
@@ -563,7 +584,7 @@ void check_game_over(Game *game) {
 
 void lock_and_spawn_next(Game *game) {
     settle_active_tetromino_on_board(game);
-    drop_new_tetromino(game, get_next_tetromino());
+    drop_new_tetromino(game, next_tetromino_consume(game));
     check_game_over(game);
 }
 
@@ -602,7 +623,7 @@ void handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
         }
 
         apply_gravity_tick(game);
-        DEBUG_PRINTF("TETRO Y = %hu", game->active_tetromino.y);
+        // DEBUG_PRINTF("TETRO Y = %hu", game->active_tetromino.y);
     }
 
     // Down key repeats
