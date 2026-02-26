@@ -211,7 +211,8 @@ static void refill_next_tetromino_bag(NextPieceBag *bag) {
     size_t len = sizeof(tetrominos) / sizeof(tetrominos[0]);
 
     for (size_t i = 0; i < len; i += 1) {
-        size_t j = i + rand() / (RAND_MAX / (len - i) + 1);
+        int r = rand();
+        size_t j = i + r / (RAND_MAX / (len - i) + 1);
 
         TetrominoType temp = tetrominos[i];
         tetrominos[i] = tetrominos[j];
@@ -244,7 +245,7 @@ Game create_game(uint8_t cols, uint8_t rows) {
     }
 
     // TODO: Improve this
-    srand(time(NULL));
+    srand(time(NULL) ^ (unsigned) clock());
 
     Game game = {
         .cols = cols,
@@ -646,8 +647,13 @@ void handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
 }
 
 void handle_tetromino_rotation(GLFWwindow *window, Game *game) {
-    if (is_key_tapped(window, game, KEY_UP)) {
-        game->active_tetromino = try_rotate_tetromino(game, &game->active_tetromino, TETRO_R_090);
+    if (is_key_tapped(window, game, KEY_UP) || is_key_tapped(window, game, KEY_C)) {
+        game->active_tetromino = try_rotate_tetromino(game, &game->active_tetromino, true);
+        game->should_rerender = true;
+    }
+
+    if (is_key_tapped(window, game, KEY_X)) {
+        game->active_tetromino = try_rotate_tetromino(game, &game->active_tetromino, false);
         game->should_rerender = true;
     }
 }
@@ -696,9 +702,13 @@ int game_key_to_glfw_key(GameKey key) {
         case KEY_RIGHT: return GLFW_KEY_RIGHT;
         case KEY_UP: return GLFW_KEY_UP;
         case KEY_LEFT: return GLFW_KEY_LEFT;
+        case KEY_C: return GLFW_KEY_C;
+        case KEY_X: return GLFW_KEY_X;
+        case KEY_SPACE: return GLFW_KEY_SPACE;
+        default: {
+            UNREACHABLE;
+        }
     }
-
-    UNREACHABLE;
 }
 
 

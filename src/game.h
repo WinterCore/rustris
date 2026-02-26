@@ -79,6 +79,12 @@ typedef enum GameKey {
     KEY_RIGHT,
     KEY_DOWN,
     KEY_LEFT,
+    KEY_C,
+    KEY_X,
+    KEY_SPACE,
+
+    // Used to size input state arrays, must be last
+    KEY_COUNT,
 } GameKey;
 
 /**
@@ -155,7 +161,7 @@ typedef struct Game {
      * on the first frame a key is detected as pressed, and cleared on release.
      * Prevents a held key from registering as multiple taps.
      */
-    bool input_hold_state[4];
+    bool input_hold_state[KEY_COUNT];
 
     /**
      * Tracks the custom key-repeat state for each GameKey, indexed by GameKey.
@@ -163,7 +169,7 @@ typedef struct Game {
      * after an initial delay of KEY_REPEAT_INITIAL_DELAY_MS, the key fires
      * repeats at KEY_REPEAT_RATE per second. Reset when the key is released.
      */
-    InputRepeatState input_repeat_state[4];
+    InputRepeatState input_repeat_state[KEY_COUNT];
 } Game;
 
 extern Tetromino TETROMINOS[7];
