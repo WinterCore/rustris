@@ -18,7 +18,7 @@ This project was supposed to be written in Rust but I changed my mind because ap
 - [X] Implement 7-bag randomizer (cycle shuffled sets of all 7 pieces instead of pure random)
 - [X] Implement counterclockwise rotation
 - [X] Implement hard drop (instant drop on key press)
-- [ ] Implement lock delay (brief window to move/rotate before a piece locks)
+- [X] Implement lock delay (brief window to move/rotate before a piece locks)
 - [ ] Add ghost piece (shows where the active piece will land)
 - [ ] Implement pause
 - [ ] UI

@@ -7,8 +7,10 @@
 #define TETRO_DROP_SECS_PER_ROW 1
 
 
-#define KEY_REPEAT_INITIAL_DELAY_MS 200
+#define KEY_REPEAT_INITIAL_DELAY_SECS 0.2
 #define KEY_REPEAT_RATE 20 // per second
+#define LOCK_DELAY_SECS 0.5
+#define LOCK_DELAY_MOVE_RESET_LIMIT 15
 
 typedef struct Point {
     float x;
@@ -72,6 +74,18 @@ typedef struct ActiveTetromino {
      * the player manually moves the piece down.
      */
     double simulated_time;
+
+
+    /**
+     * Timestamp (from glfwGetTime()) of when the piece first touched a surface and the lock
+     * delay window began. Reset when a new piece spawns.
+     */
+    double lock_delay_start_time;
+    /**
+     * Number of move/rotation resets remaining before the lock delay can no longer be extended.
+     * Decremented on each move or rotation while grounded, locked at 0.
+     */
+    int lock_delay_resets_remaining;
 } ActiveTetromino;
 
 typedef enum GameKey {

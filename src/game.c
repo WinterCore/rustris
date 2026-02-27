@@ -349,6 +349,8 @@ void drop_new_tetromino(Game *game, TetrominoType tetro_type) {
     double time = glfwGetTime();
 
     game->active_tetromino.simulated_time = time;
+    game->active_tetromino.lock_delay_start_time = 0;
+    game->active_tetromino.lock_delay_resets_remaining = LOCK_DELAY_MOVE_RESET_LIMIT;
 }
 
 
@@ -456,7 +458,12 @@ WallkickData *get_wallkick_data(TetrominoRotation rotation_from, TetrominoRotati
     return wallkick_data[i];
 }
 
-ActiveTetromino try_rotate_tetromino(Game *game, ActiveTetromino *at, bool clockwise) {
+bool try_rotate_tetromino(
+    Game *game,
+    ActiveTetromino *at,
+    bool clockwise,
+    ActiveTetromino *result
+) {
     Tetromino rotated_tetromino = rotate_tetromino(&at->tetromino, clockwise);
 
     TetrominoRotation next_rotation = get_next_tetromino_rotation(at->rotation, clockwise);
@@ -479,13 +486,17 @@ ActiveTetromino try_rotate_tetromino(Game *game, ActiveTetromino *at, bool clock
         int32_t y = rotated_active_tetromino.y + (int32_t) test->y;
 
         if (! check_collision(game, x, y, &rotated_active_tetromino.tetromino, DIR_STATIC)) {
-            rotated_active_tetromino.x = x;
-            rotated_active_tetromino.y = y;
-            return rotated_active_tetromino;
+            *result = *at;
+            result->tetromino = rotated_tetromino;
+            result->rotation = next_rotation;
+            result->x = x;
+            result->y = y;
+
+            return true;
         }
     }
 
-    return *at;
+    return false;
 }
 
 void clear_lines(Game *game, int32_t y, size_t count) {
@@ -590,7 +601,7 @@ void lock_and_spawn_next(Game *game) {
 }
 
 void handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
-    double time = glfwGetTime();
+    double glfwTime = glfwGetTime();
     ActiveTetromino *at = &game->active_tetromino;
 
     /**
@@ -655,65 +666,119 @@ void handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
     }
 
     // Gravity
-    while (time > at->simulated_time + game->current_level.gravity) {
+    while (glfwTime > at->simulated_time + game->current_level.gravity) {
         game->should_rerender = true;
 
         if (check_collision(game, at->x, at->y, &at->tetromino, DIR_DOWN)) {
-            lock_and_spawn_next(game);
+            if (at->lock_delay_start_time == 0) {
+                at->lock_delay_start_time = glfwTime;
+                return;
+            }
+
+            if (at->lock_delay_resets_remaining == 0 || at->lock_delay_start_time + LOCK_DELAY_SECS < glfwTime) {
+                lock_and_spawn_next(game);
+            }
 
             return;
         }
+
+        // Reset lock delay if piece is no longer grounded
+        at->lock_delay_start_time = 0;
 
         apply_gravity_tick(game);
     }
 }
 
 void handle_tetromino_rotation(GLFWwindow *window, Game *game) {
+    bool rotated = false;
+    ActiveTetromino *at = &game->active_tetromino;
+
     if (is_key_tapped(window, game, KEY_UP) || is_key_tapped(window, game, KEY_C)) {
-        game->active_tetromino = try_rotate_tetromino(game, &game->active_tetromino, true);
-        game->should_rerender = true;
+        rotated = try_rotate_tetromino(game, at, true, at);
     }
 
     if (is_key_tapped(window, game, KEY_X)) {
-        game->active_tetromino = try_rotate_tetromino(game, &game->active_tetromino, false);
+        rotated = try_rotate_tetromino(game, at, false, at);
+    }
+
+    if (rotated) {
         game->should_rerender = true;
+    }
+
+    // Lock delay logic
+    if (rotated && check_collision(game, at->x, at->y, &at->tetromino, DIR_DOWN)) {
+        game->active_tetromino.lock_delay_start_time = glfwGetTime();
+        game->active_tetromino.lock_delay_resets_remaining = MAX(at->lock_delay_resets_remaining - 1, 0);
+
+        DEBUG_PRINTF("Rotation lock delay reset, resets remaining: %d", game->active_tetromino.lock_delay_resets_remaining);
+
+        if (game->active_tetromino.lock_delay_resets_remaining == 0) {
+            lock_and_spawn_next(game);
+        }
     }
 }
 
 
 void handle_tetromino_horizontal_movement(GLFWwindow *window, Game *game) {
     ActiveTetromino *at = &game->active_tetromino;
+    int horizontal_movements = 0;
 
     if (is_key_tapped(window, game, KEY_LEFT) && ! check_collision(game, at->x, at->y, &at->tetromino, DIR_LEFT)) {
         game->active_tetromino.x -= 1;
+        horizontal_movements += 1;
+
         game->should_rerender = true;
     }
     
     if (is_key_tapped(window, game, KEY_RIGHT) && ! check_collision(game, at->x, at->y, &at->tetromino, DIR_RIGHT)) {
         game->active_tetromino.x += 1;
+        horizontal_movements += 1;
+
         game->should_rerender = true;
     }
     
     uint32_t right_repeats = get_held_key_repeats(window, game, KEY_RIGHT);
-
-    while (right_repeats > 0) {
-        if (! check_collision(game, at->x, at->y, &at->tetromino, DIR_RIGHT)) {
-            game->should_rerender = true;
-            game->active_tetromino.x += right_repeats;
-        }
-
-        right_repeats -= 1;
-    }
-
     uint32_t left_repeats = get_held_key_repeats(window, game, KEY_LEFT);
 
-    while (left_repeats > 0) {
-        if (! check_collision(game, at->x, at->y, &at->tetromino, DIR_LEFT)) {
-            game->should_rerender = true;
-            game->active_tetromino.x -= left_repeats;
-        }
+    {
+        size_t i = 0;
+        
+        while (i < right_repeats) {
+            if (! check_collision(game, at->x, at->y, &at->tetromino, DIR_RIGHT)) {
+                game->should_rerender = true;
+                game->active_tetromino.x += 1;
+                horizontal_movements += 1;
+            }
 
-        left_repeats -= 1;
+            i += 1;
+        }
+    }
+
+
+    {
+        size_t i = 0;
+
+        while (i < left_repeats) {
+            if (! check_collision(game, at->x, at->y, &at->tetromino, DIR_LEFT)) {
+                game->should_rerender = true;
+                game->active_tetromino.x -= 1;
+                horizontal_movements += 1;
+            }
+
+            i += 1;
+        }
+    }
+
+    // Lock delay logic
+    if (horizontal_movements > 0 && check_collision(game, at->x, at->y, &at->tetromino, DIR_DOWN)) {
+        at->lock_delay_start_time = glfwGetTime();
+        at->lock_delay_resets_remaining = MAX(at->lock_delay_resets_remaining - horizontal_movements, 0);
+
+        DEBUG_PRINTF("Horizontal movement lock delay reset, resets remaining: %d", game->active_tetromino.lock_delay_resets_remaining);
+
+        if (at->lock_delay_resets_remaining == 0) {
+            lock_and_spawn_next(game);
+        }
     }
 }
 
@@ -779,13 +844,11 @@ uint32_t get_held_key_repeats(GLFWwindow *window, Game *game, GameKey key) {
         return 0;
     }
 
-    double time = glfwGetTime();
+    double glfwTime = glfwGetTime();
 
     if (! state->finished_initial_delay) {
-        double delay = (float) KEY_REPEAT_INITIAL_DELAY_MS / 1000.0f;
-
-        if (state->simulated_time + delay < time) {
-            state->simulated_time += delay;
+        if (state->simulated_time + KEY_REPEAT_INITIAL_DELAY_SECS < glfwTime) {
+            state->simulated_time += KEY_REPEAT_INITIAL_DELAY_SECS;
             state->finished_initial_delay = true;
             // Fall through
         } else {
@@ -797,7 +860,7 @@ uint32_t get_held_key_repeats(GLFWwindow *window, Game *game, GameKey key) {
     
     uint32_t repeats = 0;
 
-    while (state->simulated_time + repeat_rate_delay < time) {
+    while (state->simulated_time + repeat_rate_delay < glfwTime) {
         repeats += 1;
 
         state->simulated_time += repeat_rate_delay;
