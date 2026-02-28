@@ -3,6 +3,7 @@
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define DEBUG
 
@@ -41,6 +42,7 @@ void update_board_dimensions(App *app) {
     app->ui_board->y = y;
     app->ui_board->square_width = square_width;
     app->ui_board->square_height = square_height;
+    app->ui_board->border_thickness = square_width / 10.0f;
 }
 
 uint32_t create_shader_program(unsigned int shaders[], int len) {
@@ -65,6 +67,19 @@ uint32_t create_shader_program(unsigned int shaders[], int len) {
     DEBUG_PRINTF("SHADER PROGRAM CREATED SUCCESSFULLY %s", "");
 
     return shader_program;
+}
+
+int tetromino_type_to_color_index(TetrominoType type) {
+    switch (type) {
+        case TETRO_I: return COLOR_CYAN;
+        case TETRO_J: return COLOR_BLUE;
+        case TETRO_L: return COLOR_ORANGE;
+        case TETRO_O: return COLOR_YELLOW;
+        case TETRO_S: return COLOR_GREEN;
+        case TETRO_T: return COLOR_PURPLE;
+        case TETRO_Z: return COLOR_RED;
+        default: return COLOR_EMPTY;
+    }
 }
 
 uint32_t compile_shader(GLenum type, const char *path) {
@@ -209,6 +224,11 @@ Renderer create_renderer(Game *game) {
                 4 // 4 vertices per square
                 * 3 // x, y, color_idx
                 * 4 // 4 squares in the active piece
+            ) + (
+                // Ghost piece border vertices
+                10 // 10 borders for the outline
+                * 3 // x, y, color_idx
+                * 4 // 4 vertices per border (2 triangles)
             ),
             (
                 // For the pieces
@@ -219,6 +239,9 @@ Renderer create_renderer(Game *game) {
                 // Active piece
                 6 // 6 elements per square
                 * 4 // 4 squares in the active piece
+            ) + (
+                // Ghost piece border elements
+                10 * 6
             )
         ),
         .ui_board_vertex_data = create_vertex_data(
@@ -326,7 +349,7 @@ void generate_ui_board_vertex_data(Renderer *renderer, Game *game, UIBoard *ui_b
 
         vertex_data[i + 0] = board_x + (square_width * col);
         vertex_data[i + 1] = board_y + (square_height * row);
-        vertex_data[i + 2] = TETRO_EMPTY; 
+        vertex_data[i + 2] = COLOR_EMPTY;
     }
 
     for (uint32_t i = 0, si = 0; i < elements_count; i += 6, si += 1) {
@@ -355,23 +378,7 @@ void generate_ui_board_vertex_data(Renderer *renderer, Game *game, UIBoard *ui_b
 }
 
 void generate_pieces_vertex_data(Renderer *renderer, Game *game, UIBoard *ui_board) {
-    size_t vertices_count = 0;
-    size_t elements_count = 0;
-
     size_t area = game->cols * game->rows;
-
-    for (size_t i = 0; i < area; i += 1) {
-        if (game->board[i] == TETRO_EMPTY) {
-            continue;
-        }
-
-        vertices_count += 4 * 3; // 4 (vertices per square) * 3 (x, y, color)
-        elements_count += 6;
-    }
-
-
-    vertices_count += 4 * 3 * 4;
-    elements_count += 6 * 4;
 
     float *vertex_data = renderer->pieces_vertex_data.vertex_data;
     uint32_t *elements_data = renderer->pieces_vertex_data.elements_data;
@@ -382,6 +389,7 @@ void generate_pieces_vertex_data(Renderer *renderer, Game *game, UIBoard *ui_boa
     float board_y = ui_board->y;
     float square_width = ui_board->square_width;
     float square_height = ui_board->square_height;
+    float border_thickness = ui_board->border_thickness;
 
 
     size_t vi = 0, ei = 0;
@@ -390,7 +398,7 @@ void generate_pieces_vertex_data(Renderer *renderer, Game *game, UIBoard *ui_boa
         size_t x = i % cols;
         size_t y = i / cols;
 
-        size_t ri = (rows - 1 - y) * cols + x;
+        size_t ri = y * cols + x;
 
         if (game->board[ri] == TETRO_EMPTY) {
             continue;
@@ -400,24 +408,24 @@ void generate_pieces_vertex_data(Renderer *renderer, Game *game, UIBoard *ui_boa
         // top left
         vertex_data[vi + 0] = board_x + (square_width * x);
         vertex_data[vi + 1] = board_y + (square_height * y);
-        vertex_data[vi + 2] = game->board[ri];
+        vertex_data[vi + 2] = tetromino_type_to_color_index(game->board[ri]);
         
         // top right
         vertex_data[vi + 3] = board_x + (square_width * x) + square_width;
         vertex_data[vi + 4] = board_y + (square_height * y);
-        vertex_data[vi + 5] = game->board[ri];
+        vertex_data[vi + 5] = tetromino_type_to_color_index(game->board[ri]);
         
         // bottom left
         vertex_data[vi + 6] = board_x + (square_width * x);
         vertex_data[vi + 7] = board_y + (square_height * y) + square_height;
-        vertex_data[vi + 8] = game->board[ri];
+        vertex_data[vi + 8] = tetromino_type_to_color_index(game->board[ri]);
 
         // bottom right
         vertex_data[vi + 9] = board_x + (square_width * x) + square_width;
         vertex_data[vi + 10] = board_y + (square_height * y) + square_height;
-        vertex_data[vi + 11] = game->board[ri];
+        vertex_data[vi + 11] = tetromino_type_to_color_index(game->board[ri]);
 
-        size_t vertex_idx = (vi / 12) * 4;
+        size_t vertex_idx = vi / 3;
 
         elements_data[ei + 0] =  vertex_idx + 0;
         elements_data[ei + 1] =  vertex_idx + 1;
@@ -434,6 +442,84 @@ void generate_pieces_vertex_data(Renderer *renderer, Game *game, UIBoard *ui_boa
 
     // Active piece
     ActiveTetromino *active_tetromino = &game->active_tetromino;
+
+    ActiveTetromino ghost_piece = {0};
+    memcpy(&ghost_piece, active_tetromino, sizeof(ActiveTetromino));
+
+    while (! check_collision(game, ghost_piece.x, ghost_piece.y, &ghost_piece.tetromino, DIR_DOWN)) {
+        ghost_piece.y += 1;
+    }
+
+    Tetromino *ghost_tetromino = &ghost_piece.tetromino;
+
+    // Ghost piece
+    for (size_t py = 0; py < 4; py += 1) {
+        for (size_t px = 0; px < 4; px += 1) {
+            if (!ghost_tetromino->squares[py * 4 + px]) {
+                continue;
+            }
+
+            bool top_shared = py > 0 && ghost_tetromino->squares[(py - 1) * 4 + px];
+            
+            bool bottom_shared = (py < 3) && ghost_tetromino->squares[(py+1) * 4 + px];
+            bool left_shared   = (px > 0) && ghost_tetromino->squares[py * 4 + (px-1)];
+            bool right_shared  = (px < 3) && ghost_tetromino->squares[py * 4 + (px+1)];
+            size_t x = ghost_piece.x + px;
+            size_t y = ghost_piece.y + py;
+
+            float sx = board_x + (square_width * x);
+            float sy = board_y + (square_height * y);
+
+#define EMIT_BORDER_QUAD(x0, y0, x1, y1, x2, y2, x3, y3) \
+    vertex_data[vi + 0] = (x0); vertex_data[vi + 1] = (y0); vertex_data[vi + 2] = COLOR_GHOST; \
+    vertex_data[vi + 3] = (x1); vertex_data[vi + 4] = (y1); vertex_data[vi + 5] = COLOR_GHOST; \
+    vertex_data[vi + 6] = (x2); vertex_data[vi + 7] = (y2); vertex_data[vi + 8] = COLOR_GHOST; \
+    vertex_data[vi + 9] = (x3); vertex_data[vi + 10] = (y3); vertex_data[vi + 11] = COLOR_GHOST; \
+    { size_t vertex_idx = vi / 3; \
+      elements_data[ei + 0] = vertex_idx + 0; elements_data[ei + 1] = vertex_idx + 1; elements_data[ei + 2] = vertex_idx + 2; \
+      elements_data[ei + 3] = vertex_idx + 1; elements_data[ei + 4] = vertex_idx + 2; elements_data[ei + 5] = vertex_idx + 3; } \
+    vi += 12; ei += 6;
+
+            if (!top_shared) {
+                EMIT_BORDER_QUAD(
+                    sx,                sy,
+                    sx + square_width, sy,
+                    sx,                sy + border_thickness,
+                    sx + square_width, sy + border_thickness
+                );
+            }
+
+            if (!bottom_shared) {
+                EMIT_BORDER_QUAD(
+                    sx,                sy + square_height - border_thickness,
+                    sx + square_width, sy + square_height - border_thickness,
+                    sx,                sy + square_height,
+                    sx + square_width, sy + square_height
+                );
+            }
+
+            if (!left_shared) {
+                EMIT_BORDER_QUAD(
+                    sx,                        sy,
+                    sx + border_thickness,     sy,
+                    sx,                        sy + square_height,
+                    sx + border_thickness,     sy + square_height
+                );
+            }
+
+            if (!right_shared) {
+                EMIT_BORDER_QUAD(
+                    sx + square_width - border_thickness, sy,
+                    sx + square_width,                    sy,
+                    sx + square_width - border_thickness, sy + square_height,
+                    sx + square_width,                    sy + square_height
+                );
+            }
+
+#undef EMIT_BORDER_QUAD
+        }
+    }
+
     Tetromino *tetromino = &active_tetromino->tetromino;
 
     size_t bx = active_tetromino->x;
@@ -447,7 +533,7 @@ void generate_pieces_vertex_data(Renderer *renderer, Game *game, UIBoard *ui_boa
 
 
             size_t x = bx + px;
-            size_t y = rows - (by + py) - 1;
+            size_t y = by + py;
 
 
             // top left
@@ -470,7 +556,7 @@ void generate_pieces_vertex_data(Renderer *renderer, Game *game, UIBoard *ui_boa
             vertex_data[vi + 10] = board_y + (square_height * y) + square_height;
             vertex_data[vi + 11] = tetromino->type;
 
-            size_t vertex_idx = (vi / 12) * 4;
+            size_t vertex_idx = vi / 3;
             elements_data[ei + 0] =  vertex_idx + 0;
             elements_data[ei + 1] =  vertex_idx + 1;
             elements_data[ei + 2] =  vertex_idx + 2;
@@ -483,8 +569,9 @@ void generate_pieces_vertex_data(Renderer *renderer, Game *game, UIBoard *ui_boa
         }
     }
 
-    renderer->pieces_vertex_data.vertices_count = vertices_count;
-    renderer->pieces_vertex_data.elements_count = elements_count;
+
+    renderer->pieces_vertex_data.vertices_count = vi;
+    renderer->pieces_vertex_data.elements_count = ei;
 }
 
 float previousTime = 0.0;

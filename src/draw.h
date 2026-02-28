@@ -4,12 +4,28 @@
 #include <stdint.h>
 #include "game.h"
 
+typedef enum Color {
+    COLOR_CYAN = 0,
+    COLOR_BLUE,
+    COLOR_ORANGE,
+    COLOR_YELLOW,
+    COLOR_GREEN,
+    COLOR_PURPLE,
+    COLOR_RED,
+    COLOR_EMPTY,
+    COLOR_GHOST,
+
+    COLOR_COUNT,
+} Color;
+
 typedef struct UIBoard {
     float square_width;
     float square_height;
 
     float x;
     float y;
+
+    float border_thickness;
 } UIBoard;
 
 typedef struct VertexData {

@@ -19,8 +19,9 @@ This project was supposed to be written in Rust but I changed my mind because ap
 - [X] Implement counterclockwise rotation
 - [X] Implement hard drop (instant drop on key press)
 - [X] Implement lock delay (brief window to move/rotate before a piece locks)
-- [ ] Add ghost piece (shows where the active piece will land)
+- [X] Add ghost piece (shows where the active piece will land)
 - [ ] Implement pause
+- [ ] Add sound effects (piece lock, line clear, level up)
 - [ ] UI
   - [ ] Implement text rendering (bitmap font or freetype)
   - [ ] Constrain board to center of screen, leaving room for side panels
@@ -28,7 +29,6 @@ This project was supposed to be written in Rust but I changed my mind because ap
   - [ ] Right panel: next piece preview
   - [ ] Game over screen with final score and restart prompt
   - [ ] Main menu screen
-- [ ] Add sound effects (piece lock, line clear, level up)
 - [ ] Implement hold piece
 - [ ] Style improvements
   - [ ] Add borders to pieces

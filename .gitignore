@@ -3,3 +3,4 @@ Rustris
 *.o
 .cache
 compile_commands.json
+tmp
