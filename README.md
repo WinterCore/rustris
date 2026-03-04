@@ -20,7 +20,7 @@ This project was supposed to be written in Rust but I changed my mind because ap
 - [X] Implement hard drop (instant drop on key press)
 - [X] Implement lock delay (brief window to move/rotate before a piece locks)
 - [X] Add ghost piece (shows where the active piece will land)
-- [ ] Implement pause
+- [X] Implement pause
 - [ ] Add sound effects (piece lock, line clear, level up)
 - [ ] UI
   - [ ] Implement text rendering (bitmap font or freetype)

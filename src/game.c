@@ -255,6 +255,7 @@ Game create_game(uint8_t cols, uint8_t rows) {
         .input_hold_state = {0},
         .input_repeat_state = {{ 0 }},
         .current_level = create_level(1),
+        .pause_timers = {0},
     };
 
     refill_next_tetromino_bag(&game.next_piece_bag);
@@ -331,7 +332,7 @@ Tetromino rotate_tetromino(Tetromino *tetromino, bool clockwise) {
 
 void move_tetromino_down(Game *game) {
     game->active_tetromino.y += 1;
-    game->active_tetromino.simulated_time = glfwGetTime();
+    game->active_tetromino.simulated_time = get_game_time(game);
 }
 
 void apply_gravity_tick(Game *game) {
@@ -346,7 +347,7 @@ void drop_new_tetromino(Game *game, TetrominoType tetro_type) {
     game->active_tetromino.x = (game->cols / 2) - 2;
     game->active_tetromino.y = 0;
 
-    double time = glfwGetTime();
+    double time = get_game_time(game);
 
     game->active_tetromino.simulated_time = time;
     game->active_tetromino.lock_delay_start_time = 0;
@@ -601,7 +602,7 @@ void lock_and_spawn_next(Game *game) {
 }
 
 void handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
-    double glfwTime = glfwGetTime();
+    double glfwTime = get_game_time(game);
     ActiveTetromino *at = &game->active_tetromino;
 
     /**
@@ -707,7 +708,7 @@ void handle_tetromino_rotation(GLFWwindow *window, Game *game) {
 
     // Lock delay logic
     if (rotated && check_collision(game, at->x, at->y, &at->tetromino, DIR_DOWN)) {
-        game->active_tetromino.lock_delay_start_time = glfwGetTime();
+        game->active_tetromino.lock_delay_start_time = get_game_time(game);
         game->active_tetromino.lock_delay_resets_remaining = MAX(at->lock_delay_resets_remaining - 1, 0);
 
         DEBUG_PRINTF("Rotation lock delay reset, resets remaining: %d", game->active_tetromino.lock_delay_resets_remaining);
@@ -771,7 +772,7 @@ void handle_tetromino_horizontal_movement(GLFWwindow *window, Game *game) {
 
     // Lock delay logic
     if (horizontal_movements > 0 && check_collision(game, at->x, at->y, &at->tetromino, DIR_DOWN)) {
-        at->lock_delay_start_time = glfwGetTime();
+        at->lock_delay_start_time = get_game_time(game);
         at->lock_delay_resets_remaining = MAX(at->lock_delay_resets_remaining - horizontal_movements, 0);
 
         DEBUG_PRINTF("Horizontal movement lock delay reset, resets remaining: %d", game->active_tetromino.lock_delay_resets_remaining);
@@ -791,6 +792,7 @@ int game_key_to_glfw_key(GameKey key) {
         case KEY_LEFT: return GLFW_KEY_LEFT;
         case KEY_C: return GLFW_KEY_C;
         case KEY_X: return GLFW_KEY_X;
+        case KEY_P: return GLFW_KEY_P;
         case KEY_SPACE: return GLFW_KEY_SPACE;
         default: {
             UNREACHABLE;
@@ -839,12 +841,12 @@ uint32_t get_held_key_repeats(GLFWwindow *window, Game *game, GameKey key) {
     }
     
     if (state->simulated_time == 0) {
-        state->simulated_time = glfwGetTime();
+        state->simulated_time = get_game_time(game);
 
         return 0;
     }
 
-    double glfwTime = glfwGetTime();
+    double glfwTime = get_game_time(game);
 
     if (! state->finished_initial_delay) {
         if (state->simulated_time + KEY_REPEAT_INITIAL_DELAY_SECS < glfwTime) {
@@ -867,4 +869,32 @@ uint32_t get_held_key_repeats(GLFWwindow *window, Game *game, GameKey key) {
     }
 
     return repeats;
+}
+
+void handle_pause(GLFWwindow *window, Game *game) {
+    if (! is_key_tapped(window, game, KEY_P)) {
+        return;
+    }
+
+    if (game->state == GAME_PLAYING) {
+        pause_game(game);
+    } else if (game->state == GAME_PAUSED) {
+        resume_game(game);
+    }
+}
+
+double get_game_time(Game *game) {
+    return game->pause_timers.paused_at - game->pause_timers.total_paused_time;
+}
+
+void pause_game(Game *game) {
+    double paused_at = glfwGetTime();
+    game->pause_timers.paused_at = paused_at;
+    game->state = GAME_PAUSED;
+}
+
+void resume_game(Game *game) {
+    double pause_duration = glfwGetTime() - game->pause_timers.paused_at;
+    game->pause_timers.total_paused_time += pause_duration;
+    game->state = GAME_PLAYING;
 }

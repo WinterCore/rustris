@@ -95,6 +95,8 @@ int main() {
 
         calculateFPS(&app);
 
+        handle_pause(window, &game);
+
         if (game.state == GAME_PLAYING) {
             handle_tetromino_horizontal_movement(window, &game);
             handle_tetromino_vertical_movement(window, &game);

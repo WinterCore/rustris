@@ -89,12 +89,23 @@ typedef struct ActiveTetromino {
 } ActiveTetromino;
 
 typedef enum GameKey {
+    // CW Rotation
     KEY_UP = 0,
-    KEY_RIGHT,
-    KEY_DOWN,
-    KEY_LEFT,
     KEY_C,
+    // CCW Rotation
     KEY_X,
+
+    // Movement
+    KEY_RIGHT,
+    KEY_LEFT,
+
+    // Pause
+    KEY_P,
+
+    // Soft drop
+    KEY_DOWN,
+
+    // Hard drop
     KEY_SPACE,
 
     // Used to size input state arrays, must be last
@@ -150,11 +161,24 @@ typedef struct NextPieceBag {
     uint8_t next_piece_index;
 } NextPieceBag;
 
+typedef struct PauseTimers {
+    /**
+     * Total time spent paused, used to offset the game's timers so that they don't advance while paused. Updated when pausing and resuming the game.
+     */
+    double total_paused_time;
+
+    /**
+     * Timestamp (in seconds, from glfwGetTime()) of when the game was paused, used to calculate how much time has been spent paused when resuming.
+     */
+    double paused_at;
+} PauseTimers;
+
 typedef struct Game {
     uint8_t cols;
     uint8_t rows;
 
     GameState state;
+    PauseTimers pause_timers;
 
     uint64_t score;
     uint64_t lines_cleared;
@@ -207,8 +231,12 @@ bool check_collision(
     CollisionDir dir
 );
 
+double get_game_time(Game *game);
+void pause_game(Game *game);
+void resume_game(Game *game);
 void handle_tetromino_rotation(GLFWwindow *window, Game *game);
 void handle_tetromino_vertical_movement(GLFWwindow *window, Game *game);
 void handle_tetromino_horizontal_movement(GLFWwindow *window, Game *game);
+void handle_pause(GLFWwindow *window, Game *game);
 
 #endif
