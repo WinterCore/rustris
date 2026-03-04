@@ -1,16 +1,17 @@
 OS := $(shell uname)
 CFLAGS = -std=c2x -Wall -Wextra -Iinclude
 LDFLAGS = -Iinclude
+SRCS = $(wildcard src/*.c)
 
 ifeq ($(OS),Darwin)
 	CFLAGS += `pkg-config --cflags glfw3`
 	LDFLAGS += `pkg-config --static --libs glfw3`
 else
-	CFLAGS += `pkg-config --cflags glfw3 gl`
-	LDFLAGS += `pkg-config --static --libs glfw3 gl`
+	CFLAGS += `pkg-config --cflags glfw3 gl openal sndfile`
+	LDFLAGS += `pkg-config --static --libs glfw3 gl openal sndfile`
 endif
 
-.PHONY: clean debug all executable
+.PHONY: clean debug release all
 
 all: release
 
@@ -20,23 +21,8 @@ debug: Rustris
 release: CFLAGS += -DNDEBUG
 release: Rustris
 
-executable: Rustris
-	./Rustris
-
-src/aids.o: src/aids.c src/aids.h
-	cc $(CFLAGS) -c -o src/aids.o src/aids.c
-
-src/glad.o: src/glad.c
-	cc $(CFLAGS) -c -o src/glad.o src/glad.c
-
-src/draw.o: src/draw.c src/draw.h src/game.o src/aids.o
-	cc $(CFLAGS) -c -o src/draw.o src/draw.c
-
-src/game.o: src/game.c src/game.h
-	cc $(CFLAGS) -c -o src/game.o src/game.c
+Rustris: $(SRCS)
+	cc $(CFLAGS) -o Rustris $(SRCS) $(LDFLAGS)
 
 clean:
-	rm -rf Rustris ./src/*.o
-
-Rustris: src/main.c src/glad.o src/aids.o src/draw.o src/game.o
-	cc $(CFLAGS) -o Rustris src/main.c src/glad.o src/game.o src/aids.o src/draw.o $(LDFLAGS)
+	rm -rf Rustris

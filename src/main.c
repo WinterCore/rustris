@@ -9,6 +9,7 @@
 #include "game.h"
 #include "aids.h"
 #include "draw.h"
+#include "audio.h"
 
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
@@ -30,6 +31,8 @@ void process_input(GLFWwindow *window) {
 }
 
 int main() {
+
+    test_audio();
 
     glfwInit();
 
