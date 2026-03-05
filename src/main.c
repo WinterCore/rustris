@@ -21,7 +21,7 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
     update_board_dimensions(app);
     app->game->should_rerender = true;
 
-    DEBUG_PRINTF("WINDOW RESIZE width=%u, height=%u", width, height);
+    DEBUG_PRINTF("WINDOW RESIZE width=%u, height=%u\n", width, height);
 }
 
 void process_input(GLFWwindow *window) {
@@ -31,8 +31,6 @@ void process_input(GLFWwindow *window) {
 }
 
 int main() {
-
-    test_audio();
 
     glfwInit();
 
@@ -58,10 +56,11 @@ int main() {
     int initial_width, initial_height;
 
     glfwGetFramebufferSize(window, &initial_width, &initial_height);
-    DEBUG_PRINTF("Initial window size width=%u, height=%u", initial_width, initial_height);
+    DEBUG_PRINTF("Initial window size width=%u, height=%u\n", initial_width, initial_height);
 
     Game game = create_game(10, 20);
     UIBoard ui_board = {0};
+    Audio audio = create_audio();
 
     App app = {
         .viewport_width = initial_width,
@@ -69,6 +68,7 @@ int main() {
         .game = &game,
         .renderer = NULL,
         .ui_board = &ui_board,
+        .audio = &audio,
     };
 
     glfwSetWindowUserPointer(window, &app);
@@ -102,8 +102,12 @@ int main() {
 
         if (game.state == GAME_PLAYING) {
             handle_tetromino_horizontal_movement(window, &game);
-            handle_tetromino_vertical_movement(window, &game);
+            int lines_cleared = handle_tetromino_vertical_movement(window, &game);
             handle_tetromino_rotation(window, &game);
+
+            if (lines_cleared > 0) {
+                play_sound_effect(&audio, SFX_SINGLE_LINE);
+            }
         }
 
         // Rendering

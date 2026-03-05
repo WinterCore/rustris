@@ -553,7 +553,12 @@ uint64_t get_cleared_lines_score(Game *game, uint64_t num_lines) {
     return 0;
 }
 
-void settle_active_tetromino_on_board(Game *game) {
+/**
+ * Settles the active tetromino on the board, making its squares part of the board's state. Also tries to clear lines and updates score and level accordingly.
+ *
+ * Returns the number of lines cleared
+ */
+int settle_active_tetromino_on_board(Game *game) {
     int32_t bx = game->active_tetromino.x;
     int32_t by = game->active_tetromino.y;
     Tetromino *tetromino = &game->active_tetromino.tetromino;
@@ -584,6 +589,8 @@ void settle_active_tetromino_on_board(Game *game) {
 
         // DEBUG_PRINTF("LEVEL = %hu, CLEARED LINES LINES = %" PRIu64 ", SCORE_DELTA = %" PRIu64 ", SCORE = %" PRIu64, game->current_level.num, lines_cleared, score_delta, game->score);
     }
+
+    return lines_cleared;
 }
 
 void check_game_over(Game *game) {
@@ -591,17 +598,22 @@ void check_game_over(Game *game) {
 
     if (check_collision(game, at->x, at->y, &at->tetromino, DIR_DOWN) && at->y <= 0) {
         game->state = GAME_OVER;
-        DEBUG_PRINT("GAME OVER");
+        DEBUG_PRINTF("GAME OVER\n");
     }
 }
 
-void lock_and_spawn_next(Game *game) {
-    settle_active_tetromino_on_board(game);
+/**
+ * Returns the number of lines cleared
+ */
+int lock_and_spawn_next(Game *game) {
+    int lines_cleared = settle_active_tetromino_on_board(game);
     drop_new_tetromino(game, next_tetromino_consume(game));
     check_game_over(game);
+
+    return lines_cleared;
 }
 
-void handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
+int handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
     double glfwTime = get_game_time(game);
     ActiveTetromino *at = &game->active_tetromino;
 
@@ -621,8 +633,7 @@ void handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
         }
 
         game->should_rerender = true;
-        lock_and_spawn_next(game);
-        return;
+        return lock_and_spawn_next(game);
     }
 
     // Tap
@@ -630,15 +641,14 @@ void handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
         game->should_rerender = true;
 
         if (check_collision(game, at->x, at->y, &game->active_tetromino.tetromino, DIR_DOWN)) {
-            lock_and_spawn_next(game);
+            return lock_and_spawn_next(game);
 
-            return;
         } else {
             move_tetromino_down(game);
             game->score += 1;
         }
 
-        return;
+        return 0;
     }
 
     // Down key repeats
@@ -650,9 +660,7 @@ void handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
             game->should_rerender = true;
 
             if (check_collision(game, at->x, at->y, &at->tetromino, DIR_DOWN)) {
-                lock_and_spawn_next(game);
-
-                return;
+                return lock_and_spawn_next(game);
             } else {
                 move_tetromino_down(game);
                 game->score += 1;
@@ -662,7 +670,7 @@ void handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
         }
 
         if (down_repeats > 0) {
-            return;
+            return 0;
         }
     }
 
@@ -673,14 +681,14 @@ void handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
         if (check_collision(game, at->x, at->y, &at->tetromino, DIR_DOWN)) {
             if (at->lock_delay_start_time == 0) {
                 at->lock_delay_start_time = glfwTime;
-                return;
+                return 0;
             }
 
             if (at->lock_delay_resets_remaining == 0 || at->lock_delay_start_time + LOCK_DELAY_SECS < glfwTime) {
-                lock_and_spawn_next(game);
+                return lock_and_spawn_next(game);
             }
 
-            return;
+            return 0;
         }
 
         // Reset lock delay if piece is no longer grounded
@@ -688,17 +696,19 @@ void handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
 
         apply_gravity_tick(game);
     }
+
+    return 0;
 }
 
 void handle_tetromino_rotation(GLFWwindow *window, Game *game) {
     bool rotated = false;
     ActiveTetromino *at = &game->active_tetromino;
 
-    if (is_key_tapped(window, game, KEY_UP) || is_key_tapped(window, game, KEY_C)) {
+    if (is_key_tapped(window, game, KEY_UP) || is_key_tapped(window, game, KEY_X)) {
         rotated = try_rotate_tetromino(game, at, true, at);
     }
 
-    if (is_key_tapped(window, game, KEY_X)) {
+    if (is_key_tapped(window, game, KEY_Z)) {
         rotated = try_rotate_tetromino(game, at, false, at);
     }
 
@@ -711,7 +721,7 @@ void handle_tetromino_rotation(GLFWwindow *window, Game *game) {
         game->active_tetromino.lock_delay_start_time = get_game_time(game);
         game->active_tetromino.lock_delay_resets_remaining = MAX(at->lock_delay_resets_remaining - 1, 0);
 
-        DEBUG_PRINTF("Rotation lock delay reset, resets remaining: %d", game->active_tetromino.lock_delay_resets_remaining);
+        DEBUG_PRINTF("Rotation lock delay reset, resets remaining: %d\n", game->active_tetromino.lock_delay_resets_remaining);
 
         if (game->active_tetromino.lock_delay_resets_remaining == 0) {
             lock_and_spawn_next(game);
@@ -775,7 +785,7 @@ void handle_tetromino_horizontal_movement(GLFWwindow *window, Game *game) {
         at->lock_delay_start_time = get_game_time(game);
         at->lock_delay_resets_remaining = MAX(at->lock_delay_resets_remaining - horizontal_movements, 0);
 
-        DEBUG_PRINTF("Horizontal movement lock delay reset, resets remaining: %d", game->active_tetromino.lock_delay_resets_remaining);
+        DEBUG_PRINTF("Horizontal movement lock delay reset, resets remaining: %d\n", game->active_tetromino.lock_delay_resets_remaining);
 
         if (at->lock_delay_resets_remaining == 0) {
             lock_and_spawn_next(game);
@@ -790,8 +800,8 @@ int game_key_to_glfw_key(GameKey key) {
         case KEY_RIGHT: return GLFW_KEY_RIGHT;
         case KEY_UP: return GLFW_KEY_UP;
         case KEY_LEFT: return GLFW_KEY_LEFT;
-        case KEY_C: return GLFW_KEY_C;
         case KEY_X: return GLFW_KEY_X;
+        case KEY_Z: return GLFW_KEY_Z;
         case KEY_P: return GLFW_KEY_P;
         case KEY_SPACE: return GLFW_KEY_SPACE;
         default: {
@@ -884,7 +894,11 @@ void handle_pause(GLFWwindow *window, Game *game) {
 }
 
 double get_game_time(Game *game) {
-    return game->pause_timers.paused_at - game->pause_timers.total_paused_time;
+    if (game->state == GAME_PAUSED) {
+        return game->pause_timers.paused_at - game->pause_timers.total_paused_time;
+    }
+
+    return glfwGetTime() - game->pause_timers.total_paused_time;
 }
 
 void pause_game(Game *game) {

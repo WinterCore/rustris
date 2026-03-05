@@ -3,21 +3,9 @@
 #include <stdio.h>
 #define PI 3.14159265359
 
-#ifdef DEBUG
-#define DEBUG_TEST 1
-#else
-#define DEBUG_TEST 0
-#endif
-
-#define DEBUG_PRINTF(fmt, ...) \
-        if (DEBUG_TEST) { \
-            fprintf(stderr, "-----DEBUG----> %s:%d:%s(): " fmt "\n", __FILE__, \
-                                __LINE__, __func__, __VA_ARGS__); \
-            fflush(stderr); \
-        }
-
-#define DEBUG_PRINT(str) \
-    DEBUG_PRINTF(str "%s", "");
+#define DEBUG_PRINT_ENABLED 1
+#define DEBUG_PRINTF(...) \
+    do { if (DEBUG_PRINT_ENABLED) fprintf(stderr, __VA_ARGS__); } while (0)
 
 #define UNIMPLEMENTED \
     fprintf(stderr, "UNIMPLEMENTED"); \

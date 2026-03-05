@@ -91,9 +91,9 @@ typedef struct ActiveTetromino {
 typedef enum GameKey {
     // CW Rotation
     KEY_UP = 0,
-    KEY_C,
-    // CCW Rotation
     KEY_X,
+    // CCW Rotation
+    KEY_Z,
 
     // Movement
     KEY_RIGHT,
@@ -235,7 +235,7 @@ double get_game_time(Game *game);
 void pause_game(Game *game);
 void resume_game(Game *game);
 void handle_tetromino_rotation(GLFWwindow *window, Game *game);
-void handle_tetromino_vertical_movement(GLFWwindow *window, Game *game);
+int handle_tetromino_vertical_movement(GLFWwindow *window, Game *game);
 void handle_tetromino_horizontal_movement(GLFWwindow *window, Game *game);
 void handle_pause(GLFWwindow *window, Game *game);
 

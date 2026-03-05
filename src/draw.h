@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "game.h"
+#include "audio.h"
 
 typedef enum Color {
     COLOR_CYAN = 0,
@@ -64,6 +65,7 @@ typedef struct App {
     UIBoard *ui_board;
     Game *game;
     Renderer *renderer;
+    Audio *audio;
 
     float fps;
 } App;
