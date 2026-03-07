@@ -1,8 +1,7 @@
 #ifndef AUDIO_H
 #define AUDIO_H
 
-#include "al.h"
-#include "alc.h"
+#include <miniaudio/miniaudio.h>
 
 typedef enum SoundEffect {
     SFX_DROP = 0,
@@ -18,15 +17,14 @@ typedef enum SoundEffect {
 } SoundEffect;
 
 typedef struct Audio {
-    ALCcontext *context;
-    ALCdevice *device;
-
-    ALuint buffers[SFX_COUNT];
-    ALuint sources[SFX_COUNT];
+    ma_engine engine;
+    bool sounds_initialized[SFX_COUNT];
+    ma_sound sounds[SFX_COUNT];
 } Audio;
 
 Audio create_audio();
 void play_sound_effect(Audio *audio, SoundEffect effect);
+void play_lines_cleared_sound_effect(Audio *audio, int lines_cleared);
 
 extern char *SFX_FILES[SFX_COUNT];
 

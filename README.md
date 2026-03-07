@@ -21,7 +21,7 @@ This project was supposed to be written in Rust but I changed my mind because ap
 - [X] Implement lock delay (brief window to move/rotate before a piece locks)
 - [X] Add ghost piece (shows where the active piece will land)
 - [X] Implement pause
-- [ ] Add sound effects (piece lock, line clear, level up)
+- [X] Add sound effects (piece lock, line clear, level up)
 - [ ] UI
   - [ ] Implement text rendering (bitmap font or freetype)
   - [ ] Constrain board to center of screen, leaving room for side panels
@@ -38,5 +38,8 @@ This project was supposed to be written in Rust but I changed my mind because ap
 
 ### References
 - [https://learnopengl.com/Getting-started/Hello-Triangle](https://learnopengl.com/Getting-started/Hello-Triangle)
+
+### Credits
+- [https://freesound.org/people/SilverIllusionist](https://freesound.org/people/SilverIllusionist) for some of the sound effects.
 
 `bear -- make` to generate `compile_commands.json` for `coc-clangd`

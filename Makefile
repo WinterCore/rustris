@@ -7,8 +7,8 @@ ifeq ($(OS),Darwin)
 	CFLAGS += `pkg-config --cflags glfw3`
 	LDFLAGS += `pkg-config --static --libs glfw3`
 else
-	CFLAGS += `pkg-config --cflags glfw3 gl openal sndfile`
-	LDFLAGS += `pkg-config --static --libs glfw3 gl openal sndfile`
+	CFLAGS += `pkg-config --cflags glfw3 gl`
+	LDFLAGS += `pkg-config --static --libs glfw3 gl`
 endif
 
 .PHONY: clean debug release all
@@ -22,7 +22,7 @@ release: CFLAGS += -DNDEBUG
 release: Rustris
 
 Rustris: $(SRCS)
-	cc $(CFLAGS) -o Rustris $(SRCS) $(LDFLAGS)
+	cc $(CFLAGS) -o Rustris $(SRCS) include/miniaudio/miniaudio.c $(LDFLAGS)
 
 clean:
 	rm -rf Rustris

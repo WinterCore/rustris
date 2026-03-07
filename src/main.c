@@ -98,15 +98,25 @@ int main() {
 
         calculateFPS(&app);
 
-        handle_pause(window, &game);
+        bool triggered = handle_pause(window, &game);
+        
+        if (triggered) {
+            if (game.state == GAME_PAUSED) {
+                play_sound_effect(&audio, SFX_PAUSE);
+            } else if (game.state == GAME_PLAYING) {
+                play_sound_effect(&audio, SFX_UNPAUSE);
+            }
+        }
 
         if (game.state == GAME_PLAYING) {
             handle_tetromino_horizontal_movement(window, &game);
-            int lines_cleared = handle_tetromino_vertical_movement(window, &game);
+            TetrominoVerticalMovementResult vertical_movement_result = handle_tetromino_vertical_movement(window, &game);
             handle_tetromino_rotation(window, &game);
 
-            if (lines_cleared > 0) {
-                play_sound_effect(&audio, SFX_SINGLE_LINE);
+            if (vertical_movement_result.lines_cleared > 0) {
+                play_lines_cleared_sound_effect(&audio, vertical_movement_result.lines_cleared);
+            } else if (vertical_movement_result.hard_dropped) {
+                play_sound_effect(&audio, SFX_DROP);
             }
         }
 

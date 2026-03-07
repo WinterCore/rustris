@@ -235,8 +235,17 @@ double get_game_time(Game *game);
 void pause_game(Game *game);
 void resume_game(Game *game);
 void handle_tetromino_rotation(GLFWwindow *window, Game *game);
-int handle_tetromino_vertical_movement(GLFWwindow *window, Game *game);
 void handle_tetromino_horizontal_movement(GLFWwindow *window, Game *game);
-void handle_pause(GLFWwindow *window, Game *game);
+
+typedef struct TetrominoVerticalMovementResult {
+     // Whether the piece was hard dropped, used to determine scoring and whether to play hard drop sound effect
+    bool hard_dropped;
+
+    // Number of lines cleared by this movement, used to determine scoring and whether to play line clear sound effects
+    int lines_cleared;
+} TetrominoVerticalMovementResult;
+
+TetrominoVerticalMovementResult handle_tetromino_vertical_movement(GLFWwindow *window, Game *game);
+bool handle_pause(GLFWwindow *window, Game *game);
 
 #endif

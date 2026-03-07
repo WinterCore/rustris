@@ -613,9 +613,10 @@ int lock_and_spawn_next(Game *game) {
     return lines_cleared;
 }
 
-int handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
+TetrominoVerticalMovementResult handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
     double glfwTime = get_game_time(game);
     ActiveTetromino *at = &game->active_tetromino;
+    TetrominoVerticalMovementResult result = {0};
 
     /**
      * Moving a piece down is done in 3 ways:
@@ -633,7 +634,9 @@ int handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
         }
 
         game->should_rerender = true;
-        return lock_and_spawn_next(game);
+        result.lines_cleared = lock_and_spawn_next(game);
+        result.hard_dropped = true;
+        return result;
     }
 
     // Tap
@@ -641,14 +644,16 @@ int handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
         game->should_rerender = true;
 
         if (check_collision(game, at->x, at->y, &game->active_tetromino.tetromino, DIR_DOWN)) {
-            return lock_and_spawn_next(game);
+
+            result.lines_cleared = lock_and_spawn_next(game);
+            return result;
 
         } else {
             move_tetromino_down(game);
             game->score += 1;
         }
 
-        return 0;
+        return result;
     }
 
     // Down key repeats
@@ -660,7 +665,8 @@ int handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
             game->should_rerender = true;
 
             if (check_collision(game, at->x, at->y, &at->tetromino, DIR_DOWN)) {
-                return lock_and_spawn_next(game);
+                result.lines_cleared = lock_and_spawn_next(game);
+                return result;
             } else {
                 move_tetromino_down(game);
                 game->score += 1;
@@ -670,7 +676,7 @@ int handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
         }
 
         if (down_repeats > 0) {
-            return 0;
+            return result;
         }
     }
 
@@ -681,14 +687,15 @@ int handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
         if (check_collision(game, at->x, at->y, &at->tetromino, DIR_DOWN)) {
             if (at->lock_delay_start_time == 0) {
                 at->lock_delay_start_time = glfwTime;
-                return 0;
+                return result;
             }
 
             if (at->lock_delay_resets_remaining == 0 || at->lock_delay_start_time + LOCK_DELAY_SECS < glfwTime) {
-                return lock_and_spawn_next(game);
+                result.lines_cleared = lock_and_spawn_next(game);
+                return result;
             }
 
-            return 0;
+            return result;
         }
 
         // Reset lock delay if piece is no longer grounded
@@ -697,7 +704,7 @@ int handle_tetromino_vertical_movement(GLFWwindow *window, Game *game) {
         apply_gravity_tick(game);
     }
 
-    return 0;
+    return result;
 }
 
 void handle_tetromino_rotation(GLFWwindow *window, Game *game) {
@@ -881,16 +888,24 @@ uint32_t get_held_key_repeats(GLFWwindow *window, Game *game, GameKey key) {
     return repeats;
 }
 
-void handle_pause(GLFWwindow *window, Game *game) {
+/**
+ * Returns true if pause/unpause was triggered successfully
+ */
+bool handle_pause(GLFWwindow *window, Game *game) {
     if (! is_key_tapped(window, game, KEY_P)) {
-        return;
+        return false;
     }
 
     if (game->state == GAME_PLAYING) {
         pause_game(game);
+
+        return true;
     } else if (game->state == GAME_PAUSED) {
         resume_game(game);
+        return true;
     }
+
+    return false;
 }
 
 double get_game_time(Game *game) {
