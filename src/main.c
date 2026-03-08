@@ -60,7 +60,7 @@ int main() {
 
     Game game = create_game(10, 20);
     UIBoard ui_board = {0};
-    Audio audio = create_audio();
+    Audio *audio = create_audio();
 
     App app = {
         .viewport_width = initial_width,
@@ -68,7 +68,7 @@ int main() {
         .game = &game,
         .renderer = NULL,
         .ui_board = &ui_board,
-        .audio = &audio,
+        .audio = audio,
     };
 
     glfwSetWindowUserPointer(window, &app);
@@ -102,9 +102,9 @@ int main() {
         
         if (triggered) {
             if (game.state == GAME_PAUSED) {
-                play_sound_effect(&audio, SFX_PAUSE);
+                play_sound_effect(audio, SFX_PAUSE);
             } else if (game.state == GAME_PLAYING) {
-                play_sound_effect(&audio, SFX_UNPAUSE);
+                play_sound_effect(audio, SFX_UNPAUSE);
             }
         }
 
@@ -114,9 +114,9 @@ int main() {
             handle_tetromino_rotation(window, &game);
 
             if (vertical_movement_result.lines_cleared > 0) {
-                play_lines_cleared_sound_effect(&audio, vertical_movement_result.lines_cleared);
+                play_lines_cleared_sound_effect(audio, vertical_movement_result.lines_cleared);
             } else if (vertical_movement_result.hard_dropped) {
-                play_sound_effect(&audio, SFX_DROP);
+                play_sound_effect(audio, SFX_DROP);
             }
         }
 

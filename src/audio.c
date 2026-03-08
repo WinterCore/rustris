@@ -1,5 +1,4 @@
 #include <stdlib.h>
-#include <stdio.h>
 #include <miniaudio/miniaudio.h>
 
 #include "audio.h"
@@ -15,9 +14,9 @@ char *SFX_FILES[SFX_COUNT] = {
     "assets/pause.wav",
 };
 
-Audio create_audio() {
-    Audio audio = {0};
-    ma_result engine_init_result = ma_engine_init(NULL, &audio.engine);
+Audio *create_audio() {
+    Audio *audio = malloc(sizeof(struct Audio));
+    ma_result engine_init_result = ma_engine_init(NULL, &audio->engine);
 
     if (engine_init_result != MA_SUCCESS) {
         DEBUG_PRINTF("Failed to initialize audio engine: %d\n", engine_init_result);
@@ -31,12 +30,12 @@ Audio create_audio() {
         }
 
         ma_result sound_init_result = ma_sound_init_from_file(
-            &audio.engine,
+            &audio->engine,
             SFX_FILES[i],
             MA_SOUND_FLAG_DECODE,
             NULL,
             NULL,
-            &audio.sounds[i]
+            &audio->sounds[i]
         );
 
         if (sound_init_result != MA_SUCCESS) {
@@ -44,7 +43,7 @@ Audio create_audio() {
             exit(EXIT_FAILURE);
         }
 
-        audio.sounds_initialized[i] = true;
+        audio->sounds_initialized[i] = true;
     }
 
     return audio;

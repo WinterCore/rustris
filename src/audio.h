@@ -22,7 +22,7 @@ typedef struct Audio {
     ma_sound sounds[SFX_COUNT];
 } Audio;
 
-Audio create_audio();
+Audio *create_audio();
 void play_sound_effect(Audio *audio, SoundEffect effect);
 void play_lines_cleared_sound_effect(Audio *audio, int lines_cleared);
 
