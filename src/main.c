@@ -1,11 +1,9 @@
 #include <stdio.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <stdlib.h>
 #include <stdint.h>
 
-#define DEBUG
-
+#include "font.h"
 #include "game.h"
 #include "aids.h"
 #include "draw.h"
@@ -38,6 +36,8 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+
+    load_font();
     
     GLFWwindow *window = glfwCreateWindow(
         800,

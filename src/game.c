@@ -8,8 +8,6 @@
 #include <math.h>
 #include <assert.h>
 
-#define DEBUG
-
 #include "./game.h"
 #include "./aids.h"
 

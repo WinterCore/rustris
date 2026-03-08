@@ -5,8 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define DEBUG
-
 #include "game.h"
 #include "draw.h"
 #include "aids.h"
