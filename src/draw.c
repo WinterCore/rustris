@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "font.h"
 #include "game.h"
 #include "draw.h"
 #include "aids.h"
@@ -111,13 +112,26 @@ Renderer create_renderer(Game *game) {
 
     uint32_t shaders[] = { vertex_shader, fragment_shader };
 
+    uint32_t font_vertex_shader = compile_shader(GL_VERTEX_SHADER, "./shaders/font.vert");
+    uint32_t font_fragment_shader = compile_shader(GL_FRAGMENT_SHADER, "./shaders/font.frag");
+
+    uint32_t font_shaders[] = { vertex_shader, fragment_shader };
+
     uint32_t shader_program = create_shader_program(
         shaders,
         sizeof(shaders) / sizeof(uint32_t)
     );
 
+    uint32_t font_shader_program = create_shader_program(
+        font_shaders,
+        sizeof(font_shaders) / sizeof(uint32_t)
+    );
+
     glDeleteShader(vertex_shader);
     glDeleteShader(fragment_shader);
+
+    glDeleteShader(font_vertex_shader);
+    glDeleteShader(font_fragment_shader);
 
     /*
      * UI Board cell buffers
@@ -163,6 +177,48 @@ Renderer create_renderer(Game *game) {
 
 
     /*
+     * UI Board cell buffers
+     */
+
+    // Generate buffers
+    uint32_t font_vbo, font_vao, font_ebo;
+    glGenVertexArrays(1, &font_vao);
+    glGenBuffers(1, &font_vbo);
+    glGenBuffers(1, &font_ebo);
+
+    // Configure UI board vao
+    glBindVertexArray(font_vao);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, font_ebo);
+    glBindBuffer(GL_ARRAY_BUFFER, font_vbo);
+
+    // X, Y positions of the cell
+    glVertexAttribPointer(
+        0,
+        2,
+        GL_FLOAT,
+        GL_FALSE,
+        4 * sizeof(float),
+        (void *) 0
+    );
+    glEnableVertexAttribArray(0);
+
+    // Color index of the cell
+    glVertexAttribPointer(
+        1,
+        2,
+        GL_FLOAT,
+        GL_FALSE,
+        4 * sizeof(float),
+        (void *) (2 * sizeof(float))
+    );
+    glEnableVertexAttribArray(1);
+
+    // Unbind buffer
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    // Unbind VAO
+    glBindVertexArray(0);
+
+    /*
      * Pieces cell buffers
      */
 
@@ -202,9 +258,23 @@ Renderer create_renderer(Game *game) {
     // Unbind VAO
     glBindVertexArray(0);
 
+    FontBitmap font_bitmap = load_font();
+
+    /**
+     * Font texture
+     */
+    unsigned int font_texture;
+    glGenTextures(1, &font_texture);
+    glBindTexture(GL_TEXTURE_2D, font_texture);  
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, font_bitmap.width, font_bitmap.height, 0, GL_RGB, GL_UNSIGNED_BYTE, font_bitmap.data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
     Renderer renderer = {
         .shader_program = shader_program,
+        .font_shader_program = font_shader_program,
+        .font_texture = font_texture,
         .screen_size_loc = glGetUniformLocation(shader_program, "screenSize"),
+        .screen_size_loc = glGetUniformLocation(font_shader_program, "screenSize"),
         .board_vao = board_vao,
         .board_vbo = board_vbo,
         .board_ebo = board_ebo,

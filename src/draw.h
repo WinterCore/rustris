@@ -49,6 +49,8 @@ VertexData create_vertex_data(uint32_t vertices_count, uint32_t elements_count);
 
 typedef struct {
     uint32_t shader_program;
+    uint32_t font_shader_program;
+    unsigned int font_texture;
     int32_t screen_size_loc;
 
     uint32_t board_vao, board_vbo, board_ebo;

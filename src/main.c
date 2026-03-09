@@ -36,9 +36,7 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-
-    load_font();
-    
+ 
     GLFWwindow *window = glfwCreateWindow(
         800,
         600,
@@ -86,7 +84,7 @@ int main() {
     }
 
     Renderer renderer = create_renderer(&game);
-    app.renderer = &renderer;
+    app.renderer = &renderer; 
 
     // Wireframe mode
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);

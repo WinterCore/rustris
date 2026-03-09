@@ -83,8 +83,6 @@ FontBitmap load_font() {
     parser_consume_whitespace(&parser);
 
     // Data
-
-
     FontBitmap bitmap = {
         .width = width,
         .height = height,
