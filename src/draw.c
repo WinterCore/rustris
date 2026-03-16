@@ -115,7 +115,7 @@ Renderer create_renderer(Game *game) {
     uint32_t font_vertex_shader = compile_shader(GL_VERTEX_SHADER, "./shaders/font.vert");
     uint32_t font_fragment_shader = compile_shader(GL_FRAGMENT_SHADER, "./shaders/font.frag");
 
-    uint32_t font_shaders[] = { vertex_shader, fragment_shader };
+    uint32_t font_shaders[] = { font_vertex_shader, font_fragment_shader };
 
     uint32_t shader_program = create_shader_program(
         shaders,
@@ -186,12 +186,12 @@ Renderer create_renderer(Game *game) {
     glGenBuffers(1, &font_vbo);
     glGenBuffers(1, &font_ebo);
 
-    // Configure UI board vao
+    // Configure font vao
     glBindVertexArray(font_vao);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, font_ebo);
     glBindBuffer(GL_ARRAY_BUFFER, font_vbo);
 
-    // X, Y positions of the cell
+    // xy
     glVertexAttribPointer(
         0,
         2,
@@ -202,7 +202,7 @@ Renderer create_renderer(Game *game) {
     );
     glEnableVertexAttribArray(0);
 
-    // Color index of the cell
+    // uv 
     glVertexAttribPointer(
         1,
         2,
@@ -266,21 +266,28 @@ Renderer create_renderer(Game *game) {
     unsigned int font_texture;
     glGenTextures(1, &font_texture);
     glBindTexture(GL_TEXTURE_2D, font_texture);  
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, font_bitmap.width, font_bitmap.height, 0, GL_RGB, GL_UNSIGNED_BYTE, font_bitmap.data);
-    glGenerateMipmap(GL_TEXTURE_2D);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     Renderer renderer = {
         .shader_program = shader_program,
         .font_shader_program = font_shader_program,
         .font_texture = font_texture,
         .screen_size_loc = glGetUniformLocation(shader_program, "screenSize"),
-        .screen_size_loc = glGetUniformLocation(font_shader_program, "screenSize"),
+        .font_shader_screen_size_loc = glGetUniformLocation(font_shader_program, "screenSize"),
+        .font_shader_atlas_loc = glGetUniformLocation(font_shader_program, "fontAtlas"),
+        .font_shader_text_color_loc =  glGetUniformLocation(font_shader_program, "textColor"),
         .board_vao = board_vao,
         .board_vbo = board_vbo,
         .board_ebo = board_ebo,
         .pieces_vao = pieces_vao,
         .pieces_vbo = pieces_vbo,
         .pieces_ebo = pieces_ebo,
+        .font_vao = font_vao,
+        .font_vbo = font_vbo,
+        .font_ebo = font_ebo,
         .pieces_vertex_data = create_vertex_data(
             (
                 // For the pieces, we can't share vertices between squares since they can have different colors and positions, so we need to allocate 4 vertices per square (including active piece)

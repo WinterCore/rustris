@@ -6,6 +6,22 @@
 #include "font.h"
 #include "aids.h"
 
+double character_width = 0.0554;
+double character_height = 0.0930;
+
+CharacterInfo character_info[128] = {
+    (CharacterInfo) {
+        .x = 0.0664,
+        .y = 0.1093,
+        .character = 'A',
+    },
+    (CharacterInfo) {
+        .x = 0.1329,
+        .y = 0.1093,
+        .character = 'B',
+    },
+};
+
 typedef struct PPMParser {
     long pos;
     uint8_t *buffer;
@@ -47,7 +63,7 @@ int parser_consume_decimal(PPMParser *parser) {
 }
 
 FontBitmap load_font() {
-    FILE *file = fopen("assets/font.ppm", "r");
+    FILE *file = fopen("assets/font.ppm", "rb");
 
     fseek(file, 0, SEEK_END);
     long size = ftell(file);

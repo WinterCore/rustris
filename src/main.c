@@ -135,15 +135,51 @@ int main() {
         draw_ui_board(&renderer);
         draw_pieces(&renderer);
 
-        /*
-        glBindVertexArray(board_vao);
-        glDrawElements(GL_TRIANGLES, ui_board_vertex_data.elements_count, GL_UNSIGNED_INT, 0);
-        
-        glBindVertexArray(pieces_vao);
-        glDrawElements(GL_TRIANGLES, pieces_vertex_data.elements_count, GL_UNSIGNED_INT, 0);
-        */
+        glUseProgram(renderer.font_shader_program);
+        glUniform2f(renderer.font_shader_screen_size_loc, (float) app.viewport_width, (float) app.viewport_height);
+        glUniform4f(renderer.font_shader_text_color_loc, 1.0f, 1.0f, 1.0f, 1.0f);
+        glBindVertexArray(renderer.font_vao);
 
+        glBindBuffer(GL_ARRAY_BUFFER, renderer.font_vbo);
+        float font_vertices[] = {
+            // TL: pos |  uv
+            0, 0,     0.0664, 0.1093,
+
+            // TR: pos |  uv
+            200, 0,     0.0664 + character_width, 0.1093,
+
+            // BL: pos |  uv
+            0, 200,     0.0664, 0.1093 + character_height,
+
+            // BR: pos |  uv
+            200, 200,    0.0664 + character_width, 0.1093 + character_height,
+        };
+
+        glBufferData(
+            GL_ARRAY_BUFFER,
+            sizeof(font_vertices),
+            font_vertices,
+            GL_DYNAMIC_DRAW
+        );
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, renderer.font_ebo);
+
+        uint32_t font_elements[] = {
+            0, 1, 2,
+            1, 2, 3
+        };
+        glBufferData(
+            GL_ELEMENT_ARRAY_BUFFER,
+            sizeof(font_elements),
+            font_elements,
+            GL_DYNAMIC_DRAW
+        );
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
+        glDisable(GL_BLEND);
 
         // Check and call events and swap the buffers
         glfwSwapBuffers(window);

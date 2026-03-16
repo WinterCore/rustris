@@ -3,4 +3,5 @@ Rustris
 *.o
 .cache
 compile_commands.json
+*.dSYM
 tmp

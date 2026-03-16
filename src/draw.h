@@ -49,12 +49,17 @@ VertexData create_vertex_data(uint32_t vertices_count, uint32_t elements_count);
 
 typedef struct {
     uint32_t shader_program;
+    int32_t screen_size_loc;
+
     uint32_t font_shader_program;
     unsigned int font_texture;
-    int32_t screen_size_loc;
+    int32_t font_shader_atlas_loc;
+    int32_t font_shader_text_color_loc;
+    int32_t font_shader_screen_size_loc;
 
     uint32_t board_vao, board_vbo, board_ebo;
     uint32_t pieces_vao, pieces_vbo, pieces_ebo;
+    uint32_t font_vao, font_vbo, font_ebo;
 
     VertexData ui_board_vertex_data;
     VertexData pieces_vertex_data;

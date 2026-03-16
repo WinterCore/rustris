@@ -10,10 +10,12 @@ typedef struct FontBitmap {
 
 typedef struct CharacterInfo {
     char character;
-    int x, y, width, height;
+    double x, y;
 } CharacterInfo;
 
 extern CharacterInfo character_info[128];
+extern double character_width;
+extern double character_height;
 
 FontBitmap load_font();
 
