@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "font.h"
+#include "text.h"
 #include "game.h"
 #include "draw.h"
 #include "aids.h"
@@ -325,6 +325,12 @@ Renderer create_renderer(Game *game) {
             game->rows * game->cols
             * 2 // 2 triangles per square
             * 3 // 3 vertices per triangle
+        ),
+        .text_vertex_data = create_vertex_data(
+            // 4 vertices per char, 5 floats: x, y for output pos, u,v for texture and a float for color
+            1000 * 4 * 5,
+            // 6 elements per character (2 triangles)
+            1000 * 6
         ),
     };
 

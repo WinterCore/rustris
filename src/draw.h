@@ -63,6 +63,7 @@ typedef struct {
 
     VertexData ui_board_vertex_data;
     VertexData pieces_vertex_data;
+    VertexData text_vertex_data;
 } Renderer;
 
 typedef struct App {

@@ -3,7 +3,7 @@
 #include <GLFW/glfw3.h>
 #include <stdint.h>
 
-#include "font.h"
+#include "text.h"
 #include "game.h"
 #include "aids.h"
 #include "draw.h"
